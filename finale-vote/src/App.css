@@ -126,6 +126,53 @@
   50% { opacity: 0.4; }
 }
 
+.admin-badge {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  background: var(--text);
+  color: var(--bg);
+  padding: 2px 7px;
+  border-radius: 20px;
+}
+
+
+.results-locked {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 60vh;
+  padding: 40px 24px;
+}
+.results-locked-inner {
+  max-width: 420px;
+  width: 100%;
+  padding: 48px 36px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+  text-align: center;
+}
+.results-locked-icon {
+  font-size: 52px;
+  line-height: 1;
+  filter: grayscale(1);
+  opacity: 0.5;
+}
+.results-locked-title {
+  font-size: 20px;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  color: var(--text);
+}
+.results-locked-desc {
+  font-size: 14px;
+  color: var(--text-muted);
+  line-height: 1.6;
+}
+
 /* ── Footer ── */
 .footer {
   border-top: 1px solid var(--border);
@@ -160,10 +207,19 @@
   max-width: 120px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
 }
 .sign-out-btn {
-  background: transparent; color: var(--text-muted); font-size: 14px;
-  border: none; cursor: pointer; padding: 0 2px; transition: color 0.2s; line-height: 1;
+  background: transparent;
+  color: var(--text-muted);
+  font-size: 12px;
+  font-weight: 600;
+  font-family: 'Inter', sans-serif;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  cursor: pointer;
+  padding: 4px 10px;
+  transition: color 0.2s, border-color 0.2s;
+  white-space: nowrap;
 }
-.sign-out-btn:hover { color: var(--danger); }
+.sign-out-btn:hover { color: var(--danger); border-color: var(--danger); }
 
 @media (max-width: 600px) {
   .user-email { display: none; }

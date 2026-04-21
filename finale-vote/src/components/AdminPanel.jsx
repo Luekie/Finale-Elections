@@ -5,7 +5,8 @@ export default function AdminPanel({
   categories, contestants,
   onAddCategory, onRemoveCategory,
   onAddContestant, onRemoveContestant,
-  onReset, votingOpen, onToggleVoting
+  onReset, votingOpen, onToggleVoting,
+  resultsVisible, onToggleResults
 }) {
   const [expandedCat, setExpandedCat] = useState(null)
   const [newCatName, setNewCatName] = useState('')
@@ -18,12 +19,19 @@ export default function AdminPanel({
   const [conLoading, setConLoading] = useState({})
   const fileRefs = useRef({})
   const [togglingVote, setTogglingVote] = useState(false)
+  const [togglingResults, setTogglingResults] = useState(false)
   const [resetting, setResetting] = useState(false)
 
   const handleToggleVoting = async () => {
     setTogglingVote(true)
     try { await onToggleVoting(!votingOpen) }
     finally { setTogglingVote(false) }
+  }
+
+  const handleToggleResults = async () => {
+    setTogglingResults(true)
+    try { await onToggleResults(!resultsVisible) }
+    finally { setTogglingResults(false) }
   }
 
   const handleAddCategory = async () => {
@@ -119,6 +127,28 @@ export default function AdminPanel({
           disabled={togglingVote}
         >
           {togglingVote ? '...' : votingOpen ? 'Close Voting' : 'Open Voting'}
+        </button>
+      </div>
+
+      {/* Results visibility toggle */}
+      <div className={`voting-toggle-card glass-card ${resultsVisible ? 'vt-open' : 'vt-closed'}`}>
+        <div className="vt-info">
+          <span className="vt-status-dot" />
+          <div>
+            <span className="vt-label">{resultsVisible ? 'Results are Visible' : 'Results are Hidden'}</span>
+            <span className="vt-desc">
+              {resultsVisible
+                ? 'All users can view the results page'
+                : 'Results are hidden — users see "not available" message'}
+            </span>
+          </div>
+        </div>
+        <button
+          className={`vt-btn ${resultsVisible ? 'vt-btn-close' : 'vt-btn-open'}`}
+          onClick={handleToggleResults}
+          disabled={togglingResults}
+        >
+          {togglingResults ? '...' : resultsVisible ? 'Hide Results' : 'Reveal Results'}
         </button>
       </div>
 

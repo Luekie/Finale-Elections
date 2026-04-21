@@ -10,24 +10,25 @@ import AdminPanel from './components/AdminPanel'
 import AdminAnalytics from './components/AdminAnalytics'
 import VotingPanel from './components/VotingPanel'
 import ResultsPanel from './components/ResultsPanel'
-import AdminLogin from './components/AdminLogin'
 import './App.css'
 
 function Inner() {
   const { theme, toggle } = useTheme()
   const [view, setView] = useState('vote')
   const [adminTab, setAdminTab] = useState('manage')
-  const [adminUnlocked, setAdminUnlocked] = useState(false)
-  const [showLogin, setShowLogin] = useState(false)
 
-  const { user, authLoading, authError, signInWithGoogle, signOut } = useAuth()
+  const { user, authLoading, signIn, signUp, signInAdmin, signOut } = useAuth()
   const { categories, loading: catLoading, addCategory, removeCategory } = useCategories()
   const { contestants, loading: conLoading, addContestant, removeContestant, resetVotes } = useContestants()
-  const { votes, voteLog, castVote, hasVotedInCategory, votedForInCategory } = useVoting(user?.email)
-  const { votingOpen, statusLoading, setVotingOpen } = useVotingStatus()
+  const { voteLog, castVote, hasVotedInCategory, votedForInCategory } = useVoting(user?.email)
+  const { votingOpen, resultsVisible, statusLoading, setVotingOpen, setResultsVisible } = useVotingStatus()
 
+  const isAdmin = user?.isAdmin === true
   const loading = catLoading || conLoading || statusLoading
   const totalVotes = contestants.reduce((a, c) => a + (c.votes || 0), 0)
+
+  // Auto-set view to admin for admin users
+  const effectiveView = isAdmin && view === 'vote' ? 'admin' : view
 
   // Show auth gate if not logged in
   if (authLoading) {
@@ -43,7 +44,7 @@ function Inner() {
   if (!user) {
     return (
       <div className="app">
-        <AuthGate onSignInWithGoogle={signInWithGoogle} authError={authError} />
+        <AuthGate onSignIn={signIn} onSignUp={signUp} onSignInAdmin={signInAdmin} />
         <footer className="footer">
           <div className="footer-inner">
             <div className="footer-row">
@@ -60,19 +61,8 @@ function Inner() {
     )
   }
 
-  const handleManageClick = () => {
-    if (adminUnlocked) setView('admin')
-    else setShowLogin(true)
-  }
-
-  const handleLogin = (ok) => {
-    if (ok) { setAdminUnlocked(true); setShowLogin(false); setView('admin') }
-    else setShowLogin(false)
-  }
-
   return (
     <div className="app">
-      {showLogin && <AdminLogin onResult={handleLogin} />}
 
       <header className="header">
         <div className="header-inner">
@@ -80,7 +70,7 @@ function Inner() {
             <span className="logo-icon">✦</span>
             <div className="logo-text-wrap">
               <span className="logo-title">Class of 2026</span>
-              <span className="logo-sub">Double Cohort Voting</span>
+              <span className="logo-sub">Double Cohort Voting System</span>
             </div>
           </div>
 
@@ -90,16 +80,23 @@ function Inner() {
           </div>
 
           <nav className="nav">
-            <button className={`nav-btn ${view === 'vote' ? 'active' : ''}`} onClick={() => setView('vote')}>Vote</button>
-            <button className={`nav-btn ${view === 'results' ? 'active' : ''}`} onClick={() => setView('results')}>Results</button>
-            <button className={`nav-btn admin-btn ${view === 'admin' ? 'active' : ''}`} onClick={handleManageClick}>
-              {adminUnlocked ? '⚙' : '🔒'}
-            </button>
+            {!isAdmin && (
+              <button className={`nav-btn ${effectiveView === 'vote' ? 'active' : ''}`} onClick={() => setView('vote')}>Vote</button>
+            )}
+            <button className={`nav-btn ${effectiveView === 'results' ? 'active' : ''}`} onClick={() => setView('results')}>Results</button>
+            {isAdmin && (
+              <button className={`nav-btn ${effectiveView === 'admin' ? 'active' : ''}`} onClick={() => setView('admin')}>⚙ Admin</button>
+            )}
           </nav>
 
           <div className="user-menu">
-            <span className="user-email">{user.email?.split('@')[0]}</span>
-            <button className="sign-out-btn" onClick={signOut} title="Sign out">↩</button>
+            <span className="user-email">
+              {isAdmin ? (user.name || user.email?.split('@')[0]) : user.email?.split('@')[0]}
+            </span>
+            {isAdmin && <span className="admin-badge">Admin</span>}
+            <button className="sign-out-btn" onClick={signOut} title="Sign out">
+              Sign out
+            </button>
           </div>
 
           <button className="theme-toggle" onClick={toggle} aria-label="Toggle theme">
@@ -113,7 +110,7 @@ function Inner() {
           <div className="loading"><span className="spinner" /><p>Loading...</p></div>
         ) : (
           <>
-            {view === 'vote' && (
+            {effectiveView === 'vote' && !isAdmin && (
               <VotingPanel
                 categories={categories}
                 contestants={contestants}
@@ -123,15 +120,28 @@ function Inner() {
                 onVote={castVote}
               />
             )}
-            {view === 'results' && (
-              <ResultsPanel
-                categories={categories}
-                contestants={contestants}
-                totalVotes={totalVotes}
-                voteLog={voteLog}
-              />
+            {effectiveView === 'results' && (
+              resultsVisible || isAdmin ? (
+                <ResultsPanel
+                  categories={categories}
+                  contestants={contestants}
+                  totalVotes={totalVotes}
+                  voteLog={voteLog}
+                />
+              ) : (
+                <div className="results-locked">
+                  <div className="results-locked-inner glass-card">
+                    <span className="results-locked-icon">🏆</span>
+                    <h2 className="results-locked-title">Results Not Available Yet</h2>
+                    <p className="results-locked-desc">
+                      The results will be revealed by the Electoral Committee after voting closes.
+                      Check back soon!
+                    </p>
+                  </div>
+                </div>
+              )
             )}
-            {view === 'admin' && adminUnlocked && (
+            {effectiveView === 'admin' && isAdmin && (
               <div className="admin-wrap">
                 <div className="admin-tabs">
                   <button className={`admin-tab ${adminTab === 'manage' ? 'active' : ''}`} onClick={() => setAdminTab('manage')}>Manage</button>
@@ -148,6 +158,8 @@ function Inner() {
                     onReset={resetVotes}
                     votingOpen={votingOpen}
                     onToggleVoting={setVotingOpen}
+                    resultsVisible={resultsVisible}
+                    onToggleResults={setResultsVisible}
                   />
                 )}
                 {adminTab === 'analytics' && (

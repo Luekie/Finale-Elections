@@ -3,6 +3,7 @@ import { supabase } from '../supabase'
 
 export function useVotingStatus() {
   const [votingOpen, setVotingOpen] = useState(false)
+  const [resultsVisible, setResultsVisible] = useState(false)
   const [statusLoading, setStatusLoading] = useState(true)
 
   useEffect(() => {
@@ -14,18 +15,24 @@ export function useVotingStatus() {
   }, [])
 
   const fetchStatus = async () => {
-    const { data } = await supabase
-      .from('settings').select('value').eq('key', 'voting_open').single()
-    setVotingOpen(data?.value === 'true')
+    const { data } = await supabase.from('settings').select('key, value')
+    const map = Object.fromEntries((data || []).map(r => [r.key, r.value]))
+    setVotingOpen(map['voting_open'] === 'true')
+    setResultsVisible(map['results_visible'] === 'true')
     setStatusLoading(false)
   }
 
   const setVotingOpenFn = async (open) => {
-    // Optimistic update — instant UI response
     setVotingOpen(open)
     await supabase.from('settings')
       .upsert({ key: 'voting_open', value: open ? 'true' : 'false' }, { onConflict: 'key' })
   }
 
-  return { votingOpen, statusLoading, setVotingOpen: setVotingOpenFn }
+  const setResultsVisibleFn = async (visible) => {
+    setResultsVisible(visible)
+    await supabase.from('settings')
+      .upsert({ key: 'results_visible', value: visible ? 'true' : 'false' }, { onConflict: 'key' })
+  }
+
+  return { votingOpen, resultsVisible, statusLoading, setVotingOpen: setVotingOpenFn, setResultsVisible: setResultsVisibleFn }
 }
