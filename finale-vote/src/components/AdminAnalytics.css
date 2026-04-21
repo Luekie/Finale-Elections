@@ -1,0 +1,44 @@
+.analytics { display: flex; flex-direction: column; gap: 20px; }
+
+/* Stat strip */
+.stat-strip {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
+  gap: 10px;
+}
+.stat-tile { padding: 16px 18px; display: flex; flex-direction: column; gap: 5px; }
+.stat-label { font-size: 10px; text-transform: uppercase; letter-spacing: 0.09em; color: var(--text-muted); font-weight: 600; }
+.stat-value { font-size: 24px; font-weight: 800; letter-spacing: -0.02em; color: var(--text); }
+.stat-sm { font-size: 16px; }
+
+/* Section */
+.a-section { padding: 20px; }
+.a-title { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.09em; color: var(--text-muted); margin-bottom: 16px; }
+
+/* Leaderboard */
+.lb-list { display: flex; flex-direction: column; gap: 10px; }
+.lb-row { display: flex; flex-direction: column; gap: 8px; padding: 12px 0; border-bottom: 1px solid var(--border); }
+.lb-row:last-child { border-bottom: none; padding-bottom: 0; }
+.lb-row.lb-top .lb-name { font-weight: 700; }
+.lb-left { display: flex; align-items: center; gap: 10px; }
+.lb-thumb { width: 32px; height: 32px; border-radius: 6px; object-fit: cover; border: 1px solid var(--border); }
+.lb-rank { font-size: 11px; color: var(--text-muted); font-weight: 600; min-width: 22px; }
+.lb-name { font-size: 14px; font-weight: 500; color: var(--text); }
+.lb-right { display: flex; align-items: center; gap: 12px; padding-left: 42px; }
+.lb-pct { font-size: 14px; font-weight: 700; color: var(--text); }
+.lb-count { font-size: 12px; color: var(--text-muted); }
+.lb-bar-track { height: 3px; background: var(--surface-hover); border-radius: 2px; overflow: hidden; }
+.lb-bar-fill { height: 100%; background: var(--text); border-radius: 2px; transition: width 0.7s cubic-bezier(0.4,0,0.2,1); }
+
+/* Charts */
+.chart-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.chart-card { padding: 20px; }
+
+@media (max-width: 600px) {
+  .chart-row { grid-template-columns: 1fr; }
+  .stat-strip { grid-template-columns: repeat(2, 1fr); }
+}
+
+.empty-state { display: flex; flex-direction: column; align-items: center; gap: 12px; padding: 48px 24px; color: var(--text-muted); }
+.empty-icon { font-size: 28px; opacity: 0.3; }
+.empty-state p { font-size: 14px; }
