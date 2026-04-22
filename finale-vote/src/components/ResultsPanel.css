@@ -4,6 +4,47 @@
   gap: 24px;
 }
 
+/* Results header with filter */
+.results-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+.cat-filter-select {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 10px 14px;
+  color: var(--text);
+  font-size: 13px;
+  font-family: 'Inter', sans-serif;
+  font-weight: 500;
+  cursor: pointer;
+  outline: none;
+  transition: border-color 0.2s, background 0.2s;
+  min-width: 180px;
+  max-width: 260px;
+}
+.cat-filter-select:focus { border-color: var(--border-strong); background: var(--surface-hover); }
+.cat-filter-select option { background: #111; color: #fff; }
+[data-theme="light"] .cat-filter-select option { background: #fff; color: #000; }
+
+/* Category tag on leaderboard rows */
+.result-cat-tag {
+  font-size: 10px;
+  color: var(--text-faint);
+  background: var(--surface-hover);
+  border-radius: 4px;
+  padding: 2px 6px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 120px;
+}
+
 /* Stat row */
 .stat-row {
   display: grid;

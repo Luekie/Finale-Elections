@@ -20,7 +20,7 @@ function Inner() {
   const { user, authLoading, signIn, signUp, signInAdmin, signOut } = useAuth()
   const { categories, loading: catLoading, addCategory, removeCategory } = useCategories()
   const { contestants, loading: conLoading, addContestant, removeContestant, resetVotes } = useContestants()
-  const { voteLog, castVote, hasVotedInCategory, votedForInCategory } = useVoting(user?.email)
+  const { votes, voteLog, saveVote, saveAllVotes, hasVotedInCategory, votedForInCategory } = useVoting(user?.email)
   const { votingOpen, resultsVisible, statusLoading, setVotingOpen, setResultsVisible } = useVotingStatus()
 
   const isAdmin = user?.isAdmin === true
@@ -117,7 +117,9 @@ function Inner() {
                 votingOpen={votingOpen}
                 hasVotedInCategory={hasVotedInCategory}
                 votedForInCategory={votedForInCategory}
-                onVote={castVote}
+                saveVote={saveVote}
+                saveAllVotes={saveAllVotes}
+                votes={votes}
               />
             )}
             {effectiveView === 'results' && (
@@ -146,6 +148,13 @@ function Inner() {
                 <div className="admin-tabs">
                   <button className={`admin-tab ${adminTab === 'manage' ? 'active' : ''}`} onClick={() => setAdminTab('manage')}>Manage</button>
                   <button className={`admin-tab ${adminTab === 'analytics' ? 'active' : ''}`} onClick={() => setAdminTab('analytics')}>Analytics</button>
+                  <button
+                    className="admin-tab-export"
+                    onClick={() => setAdminTab('analytics')}
+                    title="Go to Analytics to export PDF"
+                  >
+                    ↓ Export PDF
+                  </button>
                 </div>
                 {adminTab === 'manage' && (
                   <AdminPanel

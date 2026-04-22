@@ -137,3 +137,141 @@
   .cat-grid { grid-template-columns: 1fr 1fr; gap: 8px; }
   .vote-grid { grid-template-columns: repeat(2, 1fr); gap: 8px; }
 }
+
+/* Tabs */
+.vote-tabs {
+  display: flex;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 3px;
+  gap: 3px;
+  width: fit-content;
+}
+.vote-tab {
+  padding: 8px 18px; border: none; border-radius: 8px;
+  background: transparent; color: var(--text-muted);
+  font-size: 13px; font-weight: 600; font-family: 'Inter', sans-serif;
+  cursor: pointer; transition: background 0.15s, color 0.15s;
+  display: flex; align-items: center; gap: 6px;
+}
+.vote-tab.active { background: var(--surface-hover); color: var(--text); }
+.vote-tab-badge {
+  background: var(--text); color: var(--bg);
+  font-size: 10px; font-weight: 700; border-radius: 20px;
+  padding: 1px 6px; line-height: 1.4;
+}
+
+/* Pending indicator */
+.cat-pending { border-color: var(--border-strong); }
+.cat-pending-dot {
+  width: 8px; height: 8px; border-radius: 50%;
+  background: var(--text); opacity: 0.6;
+}
+
+/* Selected state on vote card */
+.vote-card.selected {
+  border-color: var(--border-strong);
+  box-shadow: 0 0 0 2px var(--border-strong);
+}
+.vote-selected-label {
+  font-size: 10px; font-weight: 700; color: var(--text-muted);
+  text-transform: uppercase; letter-spacing: 0.06em;
+  padding: 0 12px;
+}
+
+/* Review & Submit button */
+.btn-review {
+  background: var(--btn-primary-bg); color: var(--btn-primary-text);
+  border: none; border-radius: 12px; padding: 16px 28px;
+  font-size: 15px; font-weight: 700; font-family: 'Inter', sans-serif;
+  cursor: pointer; transition: opacity 0.2s; width: 100%;
+}
+.btn-review:hover { opacity: 0.85; }
+
+.cat-action-row { display: flex; flex-direction: column; gap: 8px; }
+.btn-clear-selection {
+  background: transparent; color: var(--text-muted);
+  border: 1px solid var(--border); border-radius: 10px;
+  padding: 12px; font-size: 13px; font-weight: 500;
+  font-family: 'Inter', sans-serif; cursor: pointer;
+  transition: all 0.2s;
+}
+.btn-clear-selection:hover { color: var(--text); border-color: var(--border-strong); }
+
+/* Submit all button */
+.btn-submit-all {
+  background: var(--btn-primary-bg); color: var(--btn-primary-text);
+  border: none; border-radius: 12px; padding: 18px;
+  font-size: 16px; font-weight: 800; font-family: 'Inter', sans-serif;
+  cursor: pointer; transition: opacity 0.2s; width: 100%;
+  display: flex; align-items: center; justify-content: center;
+}
+.btn-submit-all:hover:not(:disabled) { opacity: 0.85; }
+.btn-submit-all:disabled { opacity: 0.45; cursor: not-allowed; }
+
+/* Review list */
+.review-list { display: flex; flex-direction: column; gap: 10px; }
+.review-row {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 14px 16px; gap: 12px; border-radius: 12px;
+}
+.review-row.review-committed { opacity: 0.6; }
+.review-left { display: flex; align-items: center; gap: 12px; flex: 1; min-width: 0; }
+.review-thumb { width: 44px; height: 44px; border-radius: 8px; object-fit: cover; flex-shrink: 0; }
+.review-avatar {
+  width: 44px; height: 44px; border-radius: 8px;
+  background: var(--surface-hover); display: flex; align-items: center;
+  justify-content: center; font-size: 18px; font-weight: 700;
+  color: var(--text-muted); flex-shrink: 0;
+}
+.review-info { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.review-cat { font-size: 10px; text-transform: uppercase; letter-spacing: 0.07em; color: var(--text-muted); font-weight: 600; }
+.review-name { font-size: 14px; font-weight: 700; color: var(--text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.review-status { display: flex; align-items: center; gap: 8px; flex-shrink: 0; }
+.review-badge {
+  font-size: 11px; font-weight: 700; padding: 3px 8px; border-radius: 20px;
+}
+.review-badge.committed { background: var(--surface-hover); color: var(--text-muted); }
+.review-badge.pending { background: var(--text); color: var(--bg); }
+.review-badge.change { background: var(--surface-hover); color: var(--text); border: 1px solid var(--border-strong); }
+.review-change {
+  background: transparent; border: 1px solid var(--border);
+  color: var(--text-muted); font-size: 11px; font-weight: 600;
+  font-family: 'Inter', sans-serif; border-radius: 6px;
+  padding: 3px 8px; cursor: pointer; transition: all 0.2s;
+}
+.review-change:hover { color: var(--text); border-color: var(--border-strong); }
+
+/* My Votes list */
+.myvotes-list { display: flex; flex-direction: column; gap: 10px; }
+.myvote-row {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 14px 16px; border-radius: 12px;
+}
+.myvote-left { display: flex; align-items: center; gap: 12px; flex: 1; min-width: 0; }
+.myvote-thumb { width: 44px; height: 44px; border-radius: 8px; object-fit: cover; flex-shrink: 0; }
+.myvote-avatar {
+  width: 44px; height: 44px; border-radius: 8px;
+  background: var(--surface-hover); display: flex; align-items: center;
+  justify-content: center; font-size: 18px; font-weight: 700;
+  color: var(--text-muted); flex-shrink: 0;
+}
+.myvote-info { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.myvote-cat { font-size: 10px; text-transform: uppercase; letter-spacing: 0.07em; color: var(--text-muted); font-weight: 600; }
+.myvote-name { font-size: 14px; font-weight: 700; color: var(--text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.myvote-check { font-size: 16px; color: var(--text-muted); flex-shrink: 0; }
+.myvote-change-btn {
+  background: transparent; border: 1px solid var(--border);
+  color: var(--text-muted); font-size: 12px; font-weight: 600;
+  font-family: 'Inter', sans-serif; border-radius: 6px;
+  padding: 5px 12px; cursor: pointer; transition: all 0.2s; flex-shrink: 0;
+}
+.myvote-change-btn:hover { color: var(--text); border-color: var(--border-strong); }
+
+/* Success banner */
+.submit-success {
+  display: flex; align-items: center; gap: 10px;
+  padding: 14px 18px; border-radius: 12px;
+  font-size: 14px; font-weight: 600; color: var(--text);
+}

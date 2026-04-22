@@ -2,10 +2,8 @@ import { useState, useEffect, useCallback } from 'react'
 import { supabase } from '../supabase'
 
 export function useVoting(userEmail) {
-  const [votes, setVotes] = useState({}) // { categoryId: contestantId }
+  const [votes, setVotes] = useState({}) // { categoryId: contestantId } — last saved to DB
   const [voteLog, setVoteLog] = useState([])
-
-  const storageKey = userEmail ? `finale_votes_2026_${userEmail}` : null
 
   const fetchVoteLog = useCallback(async () => {
     const { data } = await supabase
@@ -14,7 +12,6 @@ export function useVoting(userEmail) {
   }, [])
 
   useEffect(() => {
-    // Load this user's votes from DB (so votes persist across devices)
     if (userEmail) {
       supabase
         .from('vote_log')
@@ -28,33 +25,53 @@ export function useVoting(userEmail) {
           }
         })
     }
-
     fetchVoteLog()
-
     const ch = supabase.channel('vlog-realtime')
-      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'vote_log' }, fetchVoteLog)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'vote_log' }, fetchVoteLog)
       .subscribe()
     return () => { supabase.removeChannel(ch) }
   }, [userEmail, fetchVoteLog])
 
-  const castVote = async (categoryId, contestantId) => {
-    if (votes[categoryId]) return
+  // Save a vote — handles both new votes and changes to existing votes
+  const saveVote = async (categoryId, contestantId) => {
+    const previousId = votes[categoryId]
 
+    if (previousId === contestantId) return // no change
+
+    if (previousId) {
+      // Decrement old contestant's vote count
+      await supabase.rpc('decrement_vote', { contestant_id: previousId })
+      // Update existing vote_log row
+      await supabase
+        .from('vote_log')
+        .update({ contestant_id: contestantId, created_at: new Date().toISOString() })
+        .eq('voter_email', userEmail)
+        .eq('category_id', categoryId)
+    } else {
+      // First time voting in this category
+      await supabase.from('vote_log').insert({
+        category_id: categoryId,
+        contestant_id: contestantId,
+        voter_email: userEmail,
+      })
+    }
+
+    // Increment new contestant
     const { error } = await supabase.rpc('increment_vote', { contestant_id: contestantId })
     if (error) throw error
 
-    await supabase.from('vote_log').insert({
-      category_id: categoryId,
-      contestant_id: contestantId,
-      voter_email: userEmail,
-    })
+    setVotes(prev => ({ ...prev, [categoryId]: contestantId }))
+  }
 
-    const updated = { ...votes, [categoryId]: contestantId }
-    setVotes(updated)
+  // Save multiple votes at once
+  const saveAllVotes = async (selections) => {
+    for (const [categoryId, contestantId] of Object.entries(selections)) {
+      await saveVote(categoryId, contestantId)
+    }
   }
 
   const hasVotedInCategory = (categoryId) => !!votes[categoryId]
   const votedForInCategory = (categoryId) => votes[categoryId] || null
 
-  return { votes, voteLog, castVote, hasVotedInCategory, votedForInCategory }
+  return { votes, voteLog, saveVote, saveAllVotes, hasVotedInCategory, votedForInCategory }
 }

@@ -1,9 +1,10 @@
 import { useState } from 'react'
 import { validateUnimaEmail } from '../hooks/useAuth'
+import EyeIcon from './EyeIcon'
 import './AuthGate.css'
 
 export default function AuthGate({ onSignIn, onSignUp, onSignInAdmin }) {
-  const [mode, setMode] = useState('login') // 'login' | 'signup' | 'verify'
+  const [mode, setMode] = useState('login') // 'login' | 'signup'
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [confirmPassword, setConfirmPassword] = useState('')
@@ -44,42 +45,11 @@ export default function AuthGate({ onSignIn, onSignUp, onSignInAdmin }) {
     setLoading(true); setError('')
     const result = await onSignUp(email, password)
     if (!result.success) { setError(result.error); setLoading(false); return }
-    setMode('verify') // show check-your-email screen
+    // Auto signed in — no email verification needed
     setLoading(false)
   }
 
   const switchMode = (m) => { setMode(m); setError(''); setPassword(''); setConfirmPassword('') }
-
-  // ── Verify screen ──
-  if (mode === 'verify') {
-    return (
-      <div className="auth-page">
-        <div className="auth-card glass-card">
-          <div className="auth-logo">
-            <span className="auth-logo-icon">✦</span>
-            <div>
-              <span className="auth-logo-title">Class of 2026</span>
-              <span className="auth-logo-sub">Double Cohort Voting System</span>
-            </div>
-          </div>
-          <div className="auth-verify">
-            <div className="auth-verify-icon">✉</div>
-            <h1 className="auth-title">Check your email</h1>
-            <p className="auth-desc">
-              A verification link has been sent to<br />
-              <strong>{email}</strong>
-            </p>
-            <p className="auth-desc" style={{ marginTop: 8 }}>
-              Click the link in the email to activate your account, then come back here to sign in.
-            </p>
-          </div>
-          <button className="auth-back" onClick={() => switchMode('login')}>
-            ← Back to Sign In
-          </button>
-        </div>
-      </div>
-    )
-  }
 
   return (
     <div className="auth-page">
@@ -130,7 +100,7 @@ export default function AuthGate({ onSignIn, onSignUp, onSignInAdmin }) {
               autoComplete={mode === 'signup' ? 'new-password' : 'current-password'}
             />
             <button className="auth-eye" type="button" onClick={() => setShowPassword(v => !v)} tabIndex={-1}>
-              {showPassword ? '🙈' : '👁'}
+              <EyeIcon visible={showPassword} />
             </button>
           </div>
 

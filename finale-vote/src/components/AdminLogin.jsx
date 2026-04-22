@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { supabase } from '../supabase'
+import EyeIcon from './EyeIcon'
 import './AdminLogin.css'
 
 export default function AdminLogin({ onResult }) {
@@ -79,7 +80,7 @@ export default function AdminLogin({ onResult }) {
               tabIndex={-1}
               aria-label={showPin ? 'Hide PIN' : 'Show PIN'}
             >
-              {showPin ? '🙈' : '👁'}
+              <EyeIcon visible={showPin} />
             </button>
           </div>
 
