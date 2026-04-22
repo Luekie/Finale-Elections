@@ -12,9 +12,13 @@ export function validateUnimaEmail(email) {
   }
   const local = lower.split('@')[0]
   const parts = local.split(/[-/_]/).filter(Boolean)
-  const hasValidYear = parts.some(p => ALLOWED_YEARS.includes(p))
-  if (!hasValidYear) {
-    return { valid: false, reason: `Only fourth-year students (cohorts ${ALLOWED_YEARS.join(', ')}) are eligible to vote.` }
+  // The LAST segment must be the year (18-22), anything before is flexible
+  const year = parts[parts.length - 1]
+  if (!ALLOWED_YEARS.includes(year)) {
+    return {
+      valid: false,
+      reason: `Only fourth-year students (cohorts ${ALLOWED_YEARS.join(', ')}) are eligible to vote.`
+    }
   }
   return { valid: true, reason: null }
 }
