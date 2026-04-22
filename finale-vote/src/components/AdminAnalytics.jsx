@@ -2,6 +2,7 @@ import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
   PieChart, Pie, Cell, Legend, LineChart, Line
 } from 'recharts'
+import { useState } from 'react'
 import jsPDF from 'jspdf'
 import autoTable from 'jspdf-autotable'
 import './AdminAnalytics.css'
@@ -32,7 +33,10 @@ function buildTimeline(voteLog, contestants) {
   })
 }
 
-export default function AdminAnalytics({ categories, contestants, totalVotes, voteLog, isAdmin }) {
+export default function AdminAnalytics({ categories, contestants, totalVotes, voteLog, isAdmin, onDeleteVote }) {
+  const [deletingId, setDeletingId] = useState(null)
+  const [filterEmail, setFilterEmail] = useState('')
+  const [filterCat, setFilterCat] = useState('all')
   const dark = isDark()
   const colors = dark ? COLORS_DARK : COLORS_LIGHT
   const muted = dark ? 'rgba(255,255,255,0.3)' : 'rgba(0,0,0,0.3)'
@@ -298,6 +302,76 @@ export default function AdminAnalytics({ categories, contestants, totalVotes, vo
         <div className="empty-state">
           <span className="empty-icon">◎</span>
           <p>No votes yet. Analytics will appear once voting starts.</p>
+        </div>
+      )}
+
+      {/* Vote Log — admin only */}
+      {isAdmin && voteLog.length > 0 && (
+        <div className="a-section glass-card">
+          <div className="vl-header">
+            <h2 className="a-title">Vote Log</h2>
+            <div className="vl-filters">
+              <input
+                className="vl-search"
+                type="text"
+                placeholder="Filter by email..."
+                value={filterEmail}
+                onChange={e => setFilterEmail(e.target.value)}
+              />
+              <select
+                className="vl-select"
+                value={filterCat}
+                onChange={e => setFilterCat(e.target.value)}
+              >
+                <option value="all">All Categories</option>
+                {categories.map(c => (
+                  <option key={c.id} value={c.id}>{c.name}</option>
+                ))}
+              </select>
+            </div>
+          </div>
+
+          <div className="vl-list">
+            {voteLog
+              .filter(v => {
+                const emailMatch = !filterEmail || v.voter_email?.toLowerCase().includes(filterEmail.toLowerCase())
+                const catMatch = filterCat === 'all' || v.category_id === filterCat
+                return emailMatch && catMatch
+              })
+              .slice().reverse() // newest first
+              .map(v => {
+                const contestant = contestants.find(c => c.id === v.contestant_id)
+                const category = categories.find(c => c.id === v.category_id)
+                return (
+                  <div key={v.id} className="vl-row">
+                    <div className="vl-info">
+                      <span className="vl-email">{v.voter_email || 'anonymous'}</span>
+                      <span className="vl-detail">
+                        <span className="vl-cat">{category?.name || '—'}</span>
+                        <span className="vl-arrow">→</span>
+                        <span className="vl-name">{contestant?.name || '—'}</span>
+                      </span>
+                      <span className="vl-time">
+                        {v.created_at ? new Date(v.created_at).toLocaleString() : '—'}
+                      </span>
+                    </div>
+                    <button
+                      className="vl-delete"
+                      onClick={async () => {
+                        if (!confirm(`Delete vote by ${v.voter_email} for ${contestant?.name}?`)) return
+                        setDeletingId(v.id)
+                        try { await onDeleteVote(v.id, v.contestant_id) }
+                        finally { setDeletingId(null) }
+                      }}
+                      disabled={deletingId === v.id}
+                      title="Delete this vote"
+                    >
+                      {deletingId === v.id ? '...' : '✕'}
+                    </button>
+                  </div>
+                )
+              })}
+          </div>
         </div>
       )}
     </div>

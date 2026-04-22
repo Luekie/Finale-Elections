@@ -20,7 +20,7 @@ function Inner() {
   const { user, authLoading, signIn, signUp, signInAdmin, signOut } = useAuth()
   const { categories, loading: catLoading, addCategory, removeCategory } = useCategories()
   const { contestants, loading: conLoading, addContestant, removeContestant, resetVotes } = useContestants()
-  const { votes, voteLog, saveVote, saveAllVotes, hasVotedInCategory, votedForInCategory } = useVoting(user?.email)
+  const { votes, voteLog, saveVote, saveAllVotes, deleteVote, hasVotedInCategory, votedForInCategory } = useVoting(user?.email)
   const { votingOpen, resultsVisible, statusLoading, setVotingOpen, setResultsVisible } = useVotingStatus()
 
   const isAdmin = user?.isAdmin === true
@@ -178,6 +178,7 @@ function Inner() {
                     totalVotes={totalVotes}
                     voteLog={voteLog}
                     isAdmin={isAdmin}
+                    onDeleteVote={deleteVote}
                   />
                 )}
               </div>

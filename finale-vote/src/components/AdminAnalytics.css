@@ -67,3 +67,45 @@
 .empty-state { display: flex; flex-direction: column; align-items: center; gap: 12px; padding: 48px 24px; color: var(--text-muted); }
 .empty-icon { font-size: 28px; opacity: 0.3; }
 .empty-state p { font-size: 14px; }
+
+/* Vote Log */
+.vl-header { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 12px; margin-bottom: 16px; }
+.vl-filters { display: flex; gap: 8px; flex-wrap: wrap; }
+.vl-search {
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: 8px; padding: 7px 12px; color: var(--text);
+  font-size: 12px; font-family: 'Inter', sans-serif; outline: none;
+  transition: border-color 0.2s; width: 180px;
+}
+.vl-search:focus { border-color: var(--border-strong); }
+.vl-search::placeholder { color: var(--text-muted); }
+.vl-select {
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: 8px; padding: 7px 12px; color: var(--text);
+  font-size: 12px; font-family: 'Inter', sans-serif; outline: none;
+  cursor: pointer; max-width: 180px;
+}
+.vl-select option { background: #111; color: #fff; }
+[data-theme="light"] .vl-select option { background: #fff; color: #000; }
+
+.vl-list { display: flex; flex-direction: column; gap: 0; }
+.vl-row {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 10px 0; border-bottom: 1px solid var(--border); gap: 12px;
+}
+.vl-row:last-child { border-bottom: none; }
+.vl-info { display: flex; flex-direction: column; gap: 3px; flex: 1; min-width: 0; }
+.vl-email { font-size: 12px; font-weight: 600; color: var(--text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.vl-detail { display: flex; align-items: center; gap: 6px; font-size: 12px; color: var(--text-muted); }
+.vl-cat { color: var(--text-muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 140px; }
+.vl-arrow { opacity: 0.4; flex-shrink: 0; }
+.vl-name { color: var(--text); font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 120px; }
+.vl-time { font-size: 10px; color: var(--text-faint); }
+.vl-delete {
+  background: transparent; border: 1px solid var(--border);
+  color: var(--text-muted); font-size: 12px; font-weight: 700;
+  border-radius: 6px; padding: 4px 8px; cursor: pointer;
+  transition: all 0.2s; flex-shrink: 0;
+}
+.vl-delete:hover:not(:disabled) { color: var(--danger); border-color: var(--danger); background: var(--danger-bg); }
+.vl-delete:disabled { opacity: 0.4; cursor: not-allowed; }

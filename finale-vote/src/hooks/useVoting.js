@@ -70,8 +70,14 @@ export function useVoting(userEmail) {
     }
   }
 
+  // Admin: delete a specific vote by vote_log id
+  const deleteVote = async (voteLogId, contestantId) => {
+    await supabase.rpc('decrement_vote', { contestant_id: contestantId })
+    await supabase.from('vote_log').delete().eq('id', voteLogId)
+  }
+
   const hasVotedInCategory = (categoryId) => !!votes[categoryId]
   const votedForInCategory = (categoryId) => votes[categoryId] || null
 
-  return { votes, voteLog, saveVote, saveAllVotes, hasVotedInCategory, votedForInCategory }
+  return { votes, voteLog, saveVote, saveAllVotes, deleteVote, hasVotedInCategory, votedForInCategory }
 }
