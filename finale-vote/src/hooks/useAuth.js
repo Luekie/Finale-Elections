@@ -54,8 +54,12 @@ export function useAuth() {
         setUser({ email, isAdmin: true, name })
       } else {
         const { valid } = validateUnimaEmail(email)
-        if (valid) {
+        if (valid && session.user.email_confirmed_at) {
           setUser({ email, isAdmin: false, name: null })
+        } else if (valid && !session.user.email_confirmed_at) {
+          // Signed up but not verified yet — sign them out
+          supabase.auth.signOut()
+          setUser(null)
         } else {
           supabase.auth.signOut()
           setUser(null)

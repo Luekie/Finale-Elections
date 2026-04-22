@@ -168,6 +168,7 @@ function Inner() {
                     contestants={contestants}
                     totalVotes={totalVotes}
                     voteLog={voteLog}
+                    isAdmin={isAdmin}
                   />
                 )}
               </div>

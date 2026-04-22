@@ -2,6 +2,8 @@ import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
   PieChart, Pie, Cell, Legend, LineChart, Line
 } from 'recharts'
+import jsPDF from 'jspdf'
+import autoTable from 'jspdf-autotable'
 import './AdminAnalytics.css'
 
 const COLORS_DARK  = ['#fff','#ccc','#999','#666','#444','#333']
@@ -30,7 +32,7 @@ function buildTimeline(voteLog, contestants) {
   })
 }
 
-export default function AdminAnalytics({ categories, contestants, totalVotes, voteLog }) {
+export default function AdminAnalytics({ categories, contestants, totalVotes, voteLog, isAdmin }) {
   const dark = isDark()
   const colors = dark ? COLORS_DARK : COLORS_LIGHT
   const muted = dark ? 'rgba(255,255,255,0.3)' : 'rgba(0,0,0,0.3)'
@@ -44,6 +46,98 @@ export default function AdminAnalytics({ categories, contestants, totalVotes, vo
   const sorted = [...contestants].sort((a, b) => (b.votes || 0) - (a.votes || 0))
   const topVotes = sorted[0]?.votes || 0
   const timeline = buildTimeline(voteLog, contestants)
+
+  const exportPDF = () => {
+    const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' })
+    const now = new Date().toLocaleString()
+    const pageW = doc.internal.pageSize.getWidth()
+
+    // Header
+    doc.setFillColor(15, 15, 15)
+    doc.rect(0, 0, pageW, 32, 'F')
+    doc.setTextColor(255, 255, 255)
+    doc.setFontSize(18)
+    doc.setFont('helvetica', 'bold')
+    doc.text('Class of 2026', 14, 13)
+    doc.setFontSize(10)
+    doc.setFont('helvetica', 'normal')
+    doc.text('Double Cohort Voting System — Results Report', 14, 21)
+    doc.setFontSize(8)
+    doc.setTextColor(180, 180, 180)
+    doc.text(`Generated: ${now}`, 14, 28)
+
+    // Summary stats
+    doc.setTextColor(0, 0, 0)
+    doc.setFontSize(13)
+    doc.setFont('helvetica', 'bold')
+    doc.text('Summary', 14, 44)
+
+    autoTable(doc, {
+      startY: 48,
+      head: [['Metric', 'Value']],
+      body: [
+        ['Total Votes Cast', totalVotes.toString()],
+        ['Total Contestants', contestants.length.toString()],
+        ['Overall Leader', sorted[0]?.name || '—'],
+        ['Leader Vote Share', totalVotes > 0 ? `${Math.round(((sorted[0]?.votes || 0) / totalVotes) * 100)}%` : '0%'],
+        ['First Vote', voteLog[0]?.created_at ? new Date(voteLog[0].created_at).toLocaleString() : '—'],
+        ['Last Vote', voteLog[voteLog.length - 1]?.created_at ? new Date(voteLog[voteLog.length - 1].created_at).toLocaleString() : '—'],
+      ],
+      styles: { fontSize: 10, cellPadding: 4 },
+      headStyles: { fillColor: [15, 15, 15], textColor: 255, fontStyle: 'bold' },
+      alternateRowStyles: { fillColor: [245, 245, 245] },
+      margin: { left: 14, right: 14 },
+    })
+
+    // Results by category
+    categories.forEach((cat) => {
+      const catContestants = [...contestants]
+        .filter(c => c.category_id === cat.id)
+        .sort((a, b) => (b.votes || 0) - (a.votes || 0))
+
+      if (catContestants.length === 0) return
+
+      const catTotal = catContestants.reduce((s, c) => s + (c.votes || 0), 0)
+
+      doc.addPage()
+      doc.setFontSize(13)
+      doc.setFont('helvetica', 'bold')
+      doc.setTextColor(0, 0, 0)
+      doc.text(cat.name, 14, 20)
+      doc.setFontSize(9)
+      doc.setFont('helvetica', 'normal')
+      doc.setTextColor(120, 120, 120)
+      doc.text(`${catTotal} vote${catTotal !== 1 ? 's' : ''} cast`, 14, 27)
+
+      autoTable(doc, {
+        startY: 32,
+        head: [['Rank', 'Contestant', 'Votes', 'Share']],
+        body: catContestants.map((c, i) => [
+          `#${i + 1}`,
+          c.name,
+          (c.votes || 0).toString(),
+          catTotal > 0 ? `${Math.round(((c.votes || 0) / catTotal) * 100)}%` : '0%',
+        ]),
+        styles: { fontSize: 10, cellPadding: 4 },
+        headStyles: { fillColor: [15, 15, 15], textColor: 255, fontStyle: 'bold' },
+        alternateRowStyles: { fillColor: [245, 245, 245] },
+        columnStyles: { 0: { cellWidth: 15 }, 2: { cellWidth: 20 }, 3: { cellWidth: 20 } },
+        margin: { left: 14, right: 14 },
+      })
+    })
+
+    // Footer on all pages
+    const pageCount = doc.internal.getNumberOfPages()
+    for (let i = 1; i <= pageCount; i++) {
+      doc.setPage(i)
+      doc.setFontSize(8)
+      doc.setTextColor(160, 160, 160)
+      doc.text('© 2026 Finale Electoral Committee · Supported by Finale Dinner Committee', 14, 290)
+      doc.text(`Page ${i} of ${pageCount}`, pageW - 14, 290, { align: 'right' })
+    }
+
+    doc.save(`finale-results-${new Date().toISOString().slice(0, 10)}.pdf`)
+  }
 
   const barData = sorted.map(c => ({
     name: c.name.length > 12 ? c.name.slice(0, 12) + '…' : c.name,
@@ -72,9 +166,16 @@ export default function AdminAnalytics({ categories, contestants, totalVotes, vo
 
   return (
     <div className="analytics">
-      <div className="panel-header">
-        <h1 className="panel-title">Analytics</h1>
-        <p className="panel-sub">Live voting data — updates in real time</p>
+      <div className="analytics-header">
+        <div>
+          <h1 className="panel-title">Analytics</h1>
+          <p className="panel-sub">Live voting data — updates in real time</p>
+        </div>
+        {isAdmin && (
+          <button className="export-btn" onClick={exportPDF} disabled={totalVotes === 0} title={totalVotes === 0 ? 'No votes to export yet' : 'Export results to PDF'}>
+            ↓ Export PDF
+          </button>
+        )}
       </div>
 
       {/* Stat strip */}

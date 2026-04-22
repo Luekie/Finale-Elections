@@ -3,7 +3,7 @@ import { validateUnimaEmail } from '../hooks/useAuth'
 import './AuthGate.css'
 
 export default function AuthGate({ onSignIn, onSignUp, onSignInAdmin }) {
-  const [mode, setMode] = useState('login') // 'login' | 'signup'
+  const [mode, setMode] = useState('login') // 'login' | 'signup' | 'verify'
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [confirmPassword, setConfirmPassword] = useState('')
@@ -17,8 +17,6 @@ export default function AuthGate({ onSignIn, onSignUp, onSignInAdmin }) {
     setLoading(true); setError('')
 
     const trimmedEmail = email.trim().toLowerCase()
-
-    // If it's not a UNIMA email, it must be an admin — try admin only
     const isUnimaEmail = trimmedEmail.endsWith('@unima.ac.mw')
 
     if (!isUnimaEmail) {
@@ -30,7 +28,6 @@ export default function AuthGate({ onSignIn, onSignUp, onSignInAdmin }) {
       return
     }
 
-    // It's a UNIMA email — try admin first (in case an admin uses UNIMA email), then voter
     const adminResult = await onSignInAdmin(trimmedEmail, password)
     if (adminResult.success) { setLoading(false); return }
 
@@ -46,11 +43,43 @@ export default function AuthGate({ onSignIn, onSignUp, onSignInAdmin }) {
     if (password !== confirmPassword) { setError('Passwords do not match.'); return }
     setLoading(true); setError('')
     const result = await onSignUp(email, password)
-    if (!result.success) setError(result.error)
+    if (!result.success) { setError(result.error); setLoading(false); return }
+    setMode('verify') // show check-your-email screen
     setLoading(false)
   }
 
   const switchMode = (m) => { setMode(m); setError(''); setPassword(''); setConfirmPassword('') }
+
+  // ── Verify screen ──
+  if (mode === 'verify') {
+    return (
+      <div className="auth-page">
+        <div className="auth-card glass-card">
+          <div className="auth-logo">
+            <span className="auth-logo-icon">✦</span>
+            <div>
+              <span className="auth-logo-title">Class of 2026</span>
+              <span className="auth-logo-sub">Double Cohort Voting System</span>
+            </div>
+          </div>
+          <div className="auth-verify">
+            <div className="auth-verify-icon">✉</div>
+            <h1 className="auth-title">Check your email</h1>
+            <p className="auth-desc">
+              A verification link has been sent to<br />
+              <strong>{email}</strong>
+            </p>
+            <p className="auth-desc" style={{ marginTop: 8 }}>
+              Click the link in the email to activate your account, then come back here to sign in.
+            </p>
+          </div>
+          <button className="auth-back" onClick={() => switchMode('login')}>
+            ← Back to Sign In
+          </button>
+        </div>
+      </div>
+    )
+  }
 
   return (
     <div className="auth-page">

@@ -1,5 +1,30 @@
 .analytics { display: flex; flex-direction: column; gap: 20px; }
 
+.analytics-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+.export-btn {
+  background: var(--text);
+  color: var(--bg);
+  border: none;
+  border-radius: 8px;
+  padding: 10px 18px;
+  font-size: 13px;
+  font-weight: 700;
+  font-family: 'Inter', sans-serif;
+  cursor: pointer;
+  transition: opacity 0.2s;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+.export-btn:hover:not(:disabled) { opacity: 0.8; }
+.export-btn:disabled { opacity: 0.35; cursor: not-allowed; }
+
 /* Stat strip */
 .stat-strip {
   display: grid;
