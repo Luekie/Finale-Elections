@@ -50,7 +50,7 @@ export function useAuth() {
         return
       }
       const email = session.user.email.toLowerCase()
-      const { isAdmin, name } = await checkIsAdmin(email)
+      const { isAdmin, name, role } = await checkIsAdmin(email)
 
       if (!mounted) return
 
