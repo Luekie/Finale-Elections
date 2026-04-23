@@ -97,7 +97,7 @@ export default function BallotScreen({
       <div className="vote-hero">
         <h1 className="vote-hero-title">Cast Your Votes</h1>
         <p className="vote-hero-sub">
-          Class of 2026 — Double Cohort · {savedCount} of {totalCats} submitted
+          Class of 2026 - Double Cohort · {savedCount} of {totalCats} submitted
         </p>
         {totalCats > 0 && (
           <div className="progress-bar-wrap">
