@@ -112,10 +112,9 @@ export default function AdminPanel({
       {/* Viewer notice */}
       {!isSuperAdmin && (
         <div className="viewer-notice glass-card">
-          <span className="viewer-notice-icon">👁</span>
           <div>
-            <span className="viewer-notice-title">View-only access</span>
-            <span className="viewer-notice-desc">You can monitor the dashboard but cannot make changes.</span>
+            <span className="viewer-notice-title">Admin Monitoring</span>
+
           </div>
         </div>
       )}
@@ -128,8 +127,8 @@ export default function AdminPanel({
             <span className="vt-label">{votingOpen ? 'Voting is Open' : 'Voting is Closed'}</span>
             <span className="vt-desc">
               {votingOpen
-                ? 'Contestants are visible — voters can cast their votes'
-                : 'Contestants are hidden — voters see a closed screen'}
+                ? 'Contestants are visible - voters can cast their votes'
+                : 'Contestants are hidden - voters see a closed screen'}
             </span>
           </div>
         </div>
@@ -152,7 +151,7 @@ export default function AdminPanel({
             <span className="vt-desc">
               {resultsVisible
                 ? 'All users can view the results page'
-                : 'Results are hidden — users see "not available" message'}
+                : 'Results are hidden - users see "not available" message'}
             </span>
           </div>
         </div>
@@ -210,10 +209,12 @@ export default function AdminPanel({
           const busy = conLoading[cat.id]
 
           return (
-            <div key={cat.id} className="cat-card glass-card">
+            <div key={cat.id} className={`cat-card glass-card ${isOpen ? 'is-open' : ''}`}>
               <div className="cat-header" onClick={() => setExpandedCat(isOpen ? null : cat.id)}>
                 <div className="cat-header-left">
-                  <span className="cat-chevron">{isOpen ? '▾' : '▸'}</span>
+                  <svg className={`cat-chevron-icon ${isOpen ? 'open' : ''}`} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <polyline points="6 9 12 15 18 9"/>
+                  </svg>
                   <span className="cat-name">{cat.name}</span>
                   <span className="cat-badge">{catContestants.length}</span>
                 </div>

@@ -149,13 +149,6 @@ function Inner() {
                 <div className="admin-tabs">
                   <button className={`admin-tab ${adminTab === 'manage' ? 'active' : ''}`} onClick={() => setAdminTab('manage')}>Manage</button>
                   <button className={`admin-tab ${adminTab === 'analytics' ? 'active' : ''}`} onClick={() => setAdminTab('analytics')}>Analytics</button>
-                  <button
-                    className="admin-tab-export"
-                    onClick={() => setAdminTab('analytics')}
-                    title="Go to Analytics to export PDF"
-                  >
-                    ↓ Export PDF
-                  </button>
                 </div>
                 {adminTab === 'manage' && (
                   <AdminPanel

@@ -1,8 +1,11 @@
 import { useState } from 'react'
+import jsPDF from 'jspdf'
+import autoTable from 'jspdf-autotable'
 import {
   PieChart, Pie, Cell, Tooltip, ResponsiveContainer,
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Legend
 } from 'recharts'
+import CategoryDropdown from './CategoryDropdown'
 import './ResultsPanel.css'
 
 const COLORS = ['#ffffff', '#bbbbbb', '#888888', '#555555', '#333333']
@@ -24,7 +27,6 @@ export default function ResultsPanel({ categories, contestants, totalVotes, vote
     borderRadius: 8, color: isDark ? '#fff' : '#000', fontSize: 13,
   }
 
-  // Filter contestants by selected category
   const filteredContestants = selectedCat === 'all'
     ? contestants
     : contestants.filter(c => c.category_id === selectedCat)
@@ -40,9 +42,108 @@ export default function ResultsPanel({ categories, contestants, totalVotes, vote
     .map((c, i) => ({ name: c.name, value: c.votes || 0, color: colors[i % colors.length] }))
 
   const barData = sorted.map(c => ({
-    name: c.name.length > 12 ? c.name.slice(0, 12) + '…' : c.name,
+    name: c.name.length > 10 ? c.name.slice(0, 10) + '…' : c.name,
+    fullName: c.name,
     votes: c.votes || 0,
   }))
+
+  const barChartHeight = Math.max(220, Math.min(barData.length * 28, 420))
+
+  const exportPDF = () => {
+    const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' })
+    const pageW = doc.internal.pageSize.getWidth()
+    const now = new Date().toLocaleString()
+
+    // Header
+    doc.setFillColor(15, 15, 15)
+    doc.rect(0, 0, pageW, 32, 'F')
+    doc.setTextColor(255, 255, 255)
+    doc.setFontSize(18); doc.setFont('helvetica', 'bold')
+    doc.text('Class of 2026', 14, 13)
+    doc.setFontSize(10); doc.setFont('helvetica', 'normal')
+    doc.text('Double Cohort Voting System — Results Report', 14, 21)
+    doc.setFontSize(8); doc.setTextColor(180, 180, 180)
+    doc.text(`Generated: ${now}`, 14, 28)
+
+    if (selectedCat === 'all') {
+      // Summary page
+      doc.setTextColor(0, 0, 0); doc.setFontSize(13); doc.setFont('helvetica', 'bold')
+      doc.text('Summary', 14, 44)
+      autoTable(doc, {
+        startY: 48,
+        head: [['Metric', 'Value']],
+        body: [
+          ['Total Votes Cast', totalVotes.toString()],
+          ['Total Categories', categories.length.toString()],
+          ['Total Nominees', contestants.length.toString()],
+        ],
+        styles: { fontSize: 10, cellPadding: 4 },
+        headStyles: { fillColor: [15, 15, 15], textColor: 255, fontStyle: 'bold' },
+        alternateRowStyles: { fillColor: [245, 245, 245] },
+        margin: { left: 14, right: 14 },
+      })
+
+      // One page per category
+      categories.forEach(cat => {
+        const catContestants = [...contestants]
+          .filter(c => c.category_id === cat.id)
+          .sort((a, b) => (b.votes || 0) - (a.votes || 0))
+        if (catContestants.length === 0) return
+        const catTotal = catContestants.reduce((s, c) => s + (c.votes || 0), 0)
+        doc.addPage()
+        doc.setFontSize(13); doc.setFont('helvetica', 'bold'); doc.setTextColor(0, 0, 0)
+        doc.text(cat.name, 14, 20)
+        doc.setFontSize(9); doc.setFont('helvetica', 'normal'); doc.setTextColor(120, 120, 120)
+        doc.text(`${catTotal} vote${catTotal !== 1 ? 's' : ''} cast`, 14, 27)
+        autoTable(doc, {
+          startY: 32,
+          head: [['Rank', 'Nominee', 'Votes', 'Share']],
+          body: catContestants.map((c, i) => [
+            `#${i + 1}`, c.name, (c.votes || 0).toString(),
+            catTotal > 0 ? `${Math.round(((c.votes || 0) / catTotal) * 100)}%` : '0%',
+          ]),
+          styles: { fontSize: 10, cellPadding: 4 },
+          headStyles: { fillColor: [15, 15, 15], textColor: 255, fontStyle: 'bold' },
+          alternateRowStyles: { fillColor: [245, 245, 245] },
+          columnStyles: { 0: { cellWidth: 15 }, 2: { cellWidth: 20 }, 3: { cellWidth: 20 } },
+          margin: { left: 14, right: 14 },
+        })
+      })
+    } else {
+      // Single category
+      doc.setTextColor(0, 0, 0); doc.setFontSize(13); doc.setFont('helvetica', 'bold')
+      doc.text(currentCategory?.name || '', 14, 44)
+      doc.setFontSize(9); doc.setFont('helvetica', 'normal'); doc.setTextColor(120, 120, 120)
+      doc.text(`${displayTotal} vote${displayTotal !== 1 ? 's' : ''} cast`, 14, 51)
+      autoTable(doc, {
+        startY: 56,
+        head: [['Rank', 'Nominee', 'Votes', 'Share']],
+        body: sorted.map((c, i) => [
+          `#${i + 1}`, c.name, (c.votes || 0).toString(),
+          displayTotal > 0 ? `${Math.round(((c.votes || 0) / displayTotal) * 100)}%` : '0%',
+        ]),
+        styles: { fontSize: 10, cellPadding: 4 },
+        headStyles: { fillColor: [15, 15, 15], textColor: 255, fontStyle: 'bold' },
+        alternateRowStyles: { fillColor: [245, 245, 245] },
+        columnStyles: { 0: { cellWidth: 15 }, 2: { cellWidth: 20 }, 3: { cellWidth: 20 } },
+        margin: { left: 14, right: 14 },
+      })
+    }
+
+    // Footer
+    const pageCount = doc.internal.getNumberOfPages()
+    for (let i = 1; i <= pageCount; i++) {
+      doc.setPage(i)
+      doc.setFontSize(8); doc.setTextColor(160, 160, 160)
+      doc.text('© 2026 Finale Electoral Committee · Supported by Finale Dinner Committee', 14, 290)
+      doc.text(`Page ${i} of ${pageCount}`, pageW - 14, 290, { align: 'right' })
+    }
+
+    const filename = selectedCat === 'all'
+      ? `finale-results-${new Date().toISOString().slice(0, 10)}.pdf`
+      : `finale-${(currentCategory?.name || 'category').toLowerCase().replace(/\s+/g, '-')}.pdf`
+    doc.save(filename)
+  }
 
   if (contestants.length === 0) {
     return (
@@ -71,38 +172,48 @@ export default function ResultsPanel({ categories, contestants, totalVotes, vote
               : `${catTotalVotes} vote${catTotalVotes !== 1 ? 's' : ''} in ${currentCategory?.name}`}
           </p>
         </div>
-        <select
-          className="cat-filter-select"
-          value={selectedCat}
-          onChange={e => setSelectedCat(e.target.value)}
-        >
-          <option value="all">All Categories</option>
-          {categories.map(cat => (
-            <option key={cat.id} value={cat.id}>{cat.name}</option>
-          ))}
-        </select>
+        <div className="results-header-actions">
+          <CategoryDropdown categories={categories} value={selectedCat} onChange={setSelectedCat} />
+          <button className="results-export-btn" onClick={exportPDF} disabled={displayTotal === 0}>
+            ↓ Export PDF
+          </button>
+        </div>
       </div>
 
       {/* Stat cards */}
       <div className="stat-row">
-        <div className="stat-card glass-card">
+        <button className="stat-card glass-card stat-card-btn" onClick={() => setSelectedCat('all')}>
           <span className="stat-label">Total Votes</span>
           <span className="stat-value">{displayTotal}</span>
-        </div>
-        <div className="stat-card glass-card">
+        </button>
+        <button className="stat-card glass-card stat-card-btn" onClick={() => setSelectedCat('all')}>
           <span className="stat-label">Nominees</span>
           <span className="stat-value">{filteredContestants.length}</span>
-        </div>
-        <div className="stat-card glass-card">
+        </button>
+        <button
+          className="stat-card glass-card stat-card-btn"
+          onClick={() => {
+            const leaderCat = sorted[0]?.category_id
+            if (leaderCat) setSelectedCat(leaderCat)
+          }}
+          title={sorted[0] ? `View ${sorted[0].name}'s category` : ''}
+        >
           <span className="stat-label">Leader</span>
           <span className="stat-value stat-name">{sorted[0]?.name || '—'}</span>
-        </div>
-        <div className="stat-card glass-card">
+        </button>
+        <button
+          className="stat-card glass-card stat-card-btn"
+          onClick={() => {
+            const leaderCat = sorted[0]?.category_id
+            if (leaderCat) setSelectedCat(leaderCat)
+          }}
+          title="View leading category"
+        >
           <span className="stat-label">Lead %</span>
           <span className="stat-value">
             {displayTotal > 0 ? Math.round(((sorted[0]?.votes || 0) / displayTotal) * 100) : 0}%
           </span>
-        </div>
+        </button>
       </div>
 
       {/* Winner spotlight */}
@@ -175,13 +286,24 @@ export default function ResultsPanel({ categories, contestants, totalVotes, vote
         <div className="charts-row">
           <div className="chart-card glass-card">
             <h2 className="section-title">Vote Distribution</h2>
-            <ResponsiveContainer width="100%" height={220}>
-              <BarChart data={barData} margin={{ top: 8, right: 8, left: -20, bottom: 0 }}>
+            <ResponsiveContainer width="100%" height={barChartHeight}>
+              <BarChart data={barData} margin={{ top: 8, right: 8, left: -20, bottom: barData.length > 6 ? 40 : 0 }}>
                 <CartesianGrid strokeDasharray="3 3" stroke={gridColor} />
-                <XAxis dataKey="name" tick={{ fill: mutedColor, fontSize: 11 }} axisLine={false} tickLine={false} />
-                <YAxis tick={{ fill: mutedColor, fontSize: 11 }} axisLine={false} tickLine={false} allowDecimals={false} />
-                <Tooltip contentStyle={tooltipStyle} cursor={{ fill: isDark ? 'rgba(255,255,255,0.04)' : 'rgba(0,0,0,0.04)' }} />
-                <Bar dataKey="votes" radius={[6, 6, 0, 0]}>
+                <XAxis
+                  dataKey="name"
+                  tick={{ fill: mutedColor, fontSize: 10 }}
+                  axisLine={false} tickLine={false}
+                  angle={barData.length > 6 ? -35 : 0}
+                  textAnchor={barData.length > 6 ? 'end' : 'middle'}
+                  interval={0}
+                />
+                <YAxis tick={{ fill: mutedColor, fontSize: 11 }} axisLine={false} tickLine={false} allowDecimals={false} domain={[0, 'auto']} />
+                <Tooltip
+                  contentStyle={tooltipStyle}
+                  cursor={{ fill: isDark ? 'rgba(255,255,255,0.04)' : 'rgba(0,0,0,0.04)' }}
+                  formatter={(v, _, props) => [v + ' votes', props.payload?.fullName || '']}
+                />
+                <Bar dataKey="votes" radius={[4, 4, 0, 0]} maxBarSize={48}>
                   {barData.map((_, i) => <Cell key={i} fill={colors[i % colors.length]} />)}
                 </Bar>
               </BarChart>

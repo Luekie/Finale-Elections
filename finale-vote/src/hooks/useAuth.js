@@ -76,9 +76,14 @@ export function useAuth() {
       resolveUser(session)
     })
 
+    // Sign out automatically when the user closes or leaves the page
+    const handleUnload = () => { supabase.auth.signOut() }
+    window.addEventListener('pagehide', handleUnload)
+
     return () => {
       mounted = false
       subscription.unsubscribe()
+      window.removeEventListener('pagehide', handleUnload)
     }
   }, [])
 

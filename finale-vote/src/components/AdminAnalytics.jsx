@@ -5,7 +5,9 @@ import {
 import { useState } from 'react'
 import jsPDF from 'jspdf'
 import autoTable from 'jspdf-autotable'
+import CategoryDropdown from './CategoryDropdown'
 import './AdminAnalytics.css'
+import '../components/ResultsPanel.css'
 
 const COLORS_DARK  = ['#fff','#ccc','#999','#666','#444','#333']
 const COLORS_LIGHT = ['#111','#444','#777','#aaa','#ccc','#ddd']
@@ -144,9 +146,11 @@ export default function AdminAnalytics({ categories, contestants, totalVotes, vo
   }
 
   const barData = sorted.map(c => ({
-    name: c.name.length > 12 ? c.name.slice(0, 12) + '…' : c.name,
+    name: c.name.length > 10 ? c.name.slice(0, 10) + '…' : c.name,
+    fullName: c.name,
     votes: c.votes || 0,
   }))
+  const barChartHeight = Math.max(220, Math.min(barData.length * 28, 420))
 
   const pieData = sorted
     .filter(c => (c.votes || 0) > 0)
@@ -231,13 +235,24 @@ export default function AdminAnalytics({ categories, contestants, totalVotes, vo
           <div className="chart-row">
             <div className="chart-card glass-card">
               <h2 className="a-title">Vote Distribution</h2>
-              <ResponsiveContainer width="100%" height={220}>
-                <BarChart data={barData} margin={{ top: 8, right: 8, left: -20, bottom: 0 }}>
+              <ResponsiveContainer width="100%" height={barChartHeight}>
+                <BarChart data={barData} margin={{ top: 8, right: 8, left: -20, bottom: barData.length > 6 ? 40 : 0 }}>
                   <CartesianGrid strokeDasharray="3 3" stroke={grid} />
-                  <XAxis dataKey="name" tick={{ fill: muted, fontSize: 11 }} axisLine={false} tickLine={false} />
-                  <YAxis tick={{ fill: muted, fontSize: 11 }} axisLine={false} tickLine={false} allowDecimals={false} />
-                  <Tooltip contentStyle={ttStyle} cursor={{ fill: dark ? 'rgba(255,255,255,0.03)' : 'rgba(0,0,0,0.03)' }} />
-                  <Bar dataKey="votes" radius={[6,6,0,0]}>
+                  <XAxis
+                    dataKey="name"
+                    tick={{ fill: muted, fontSize: 10 }}
+                    axisLine={false} tickLine={false}
+                    angle={barData.length > 6 ? -35 : 0}
+                    textAnchor={barData.length > 6 ? 'end' : 'middle'}
+                    interval={0}
+                  />
+                  <YAxis tick={{ fill: muted, fontSize: 11 }} axisLine={false} tickLine={false} allowDecimals={false} domain={[0, 'auto']} />
+                  <Tooltip
+                    contentStyle={ttStyle}
+                    cursor={{ fill: dark ? 'rgba(255,255,255,0.03)' : 'rgba(0,0,0,0.03)' }}
+                    formatter={(v, _, props) => [v + ' votes', props.payload?.fullName || '']}
+                  />
+                  <Bar dataKey="votes" radius={[4,4,0,0]} maxBarSize={48}>
                     {barData.map((_, i) => <Cell key={i} fill={colors[i % colors.length]} />)}
                   </Bar>
                 </BarChart>
@@ -318,17 +333,11 @@ export default function AdminAnalytics({ categories, contestants, totalVotes, vo
                 value={filterEmail}
                 onChange={e => setFilterEmail(e.target.value)}
               />
-              <select
-                className="vl-select"
+              <CategoryDropdown
+                categories={categories}
                 value={filterCat}
-                onChange={e => setFilterCat(e.target.value)}
-              >
-                <option value="all">All Categories</option>
-                {categories.map(c => (
-                  <option key={c.id} value={c.id}>{c.name}</option>
-                ))}
-              </select>
-            </div>
+                onChange={setFilterCat}
+              />            </div>
           </div>
 
           <div className="vl-list">
