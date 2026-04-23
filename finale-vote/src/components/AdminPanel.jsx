@@ -6,7 +6,8 @@ export default function AdminPanel({
   onAddCategory, onRemoveCategory,
   onAddContestant, onRemoveContestant,
   onReset, votingOpen, onToggleVoting,
-  resultsVisible, onToggleResults
+  resultsVisible, onToggleResults,
+  isSuperAdmin
 }) {
   const [expandedCat, setExpandedCat] = useState(null)
   const [newCatName, setNewCatName] = useState('')
@@ -108,6 +109,17 @@ export default function AdminPanel({
   return (
     <div className="admin">
 
+      {/* Viewer notice */}
+      {!isSuperAdmin && (
+        <div className="viewer-notice glass-card">
+          <span className="viewer-notice-icon">👁</span>
+          <div>
+            <span className="viewer-notice-title">View-only access</span>
+            <span className="viewer-notice-desc">You can monitor the dashboard but cannot make changes.</span>
+          </div>
+        </div>
+      )}
+
       {/* Voting toggle */}
       <div className={`voting-toggle-card glass-card ${votingOpen ? 'vt-open' : 'vt-closed'}`}>
         <div className="vt-info">
@@ -124,7 +136,8 @@ export default function AdminPanel({
         <button
           className={`vt-btn ${votingOpen ? 'vt-btn-close' : 'vt-btn-open'}`}
           onClick={handleToggleVoting}
-          disabled={togglingVote}
+          disabled={togglingVote || !isSuperAdmin}
+          title={!isSuperAdmin ? 'Super admin access required' : ''}
         >
           {togglingVote ? '...' : votingOpen ? 'Close Voting' : 'Open Voting'}
         </button>
@@ -146,7 +159,8 @@ export default function AdminPanel({
         <button
           className={`vt-btn ${resultsVisible ? 'vt-btn-close' : 'vt-btn-open'}`}
           onClick={handleToggleResults}
-          disabled={togglingResults}
+          disabled={togglingResults || !isSuperAdmin}
+          title={!isSuperAdmin ? 'Super admin access required' : ''}
         >
           {togglingResults ? '...' : resultsVisible ? 'Hide Results' : 'Reveal Results'}
         </button>
@@ -161,11 +175,11 @@ export default function AdminPanel({
             placeholder="e.g. G.O.A.T OF OUR TIME"
             value={newCatName}
             onChange={e => { setNewCatName(e.target.value); setCatError('') }}
-            onKeyDown={e => e.key === 'Enter' && handleAddCategory()}
-            disabled={addingCat}
+            onKeyDown={e => e.key === 'Enter' && isSuperAdmin && handleAddCategory()}
+            disabled={addingCat || !isSuperAdmin}
             maxLength={80}
           />
-          <button className="btn-primary" onClick={handleAddCategory} disabled={addingCat || !newCatName.trim()}>
+          <button className="btn-primary" onClick={handleAddCategory} disabled={addingCat || !newCatName.trim() || !isSuperAdmin}>
             {addingCat ? '...' : 'Add'}
           </button>
         </div>
@@ -176,15 +190,17 @@ export default function AdminPanel({
       <div className="cat-list">
         <div className="list-header">
           <span className="list-count">{categories.length} categor{categories.length !== 1 ? 'ies' : 'y'}</span>
-          <button className="btn-ghost-danger" onClick={handleReset} disabled={resetting}>
-            {resetting ? 'Resetting...' : 'Reset all votes'}
-          </button>
+          {isSuperAdmin && (
+            <button className="btn-ghost-danger" onClick={handleReset} disabled={resetting}>
+              {resetting ? 'Resetting...' : 'Reset all votes'}
+            </button>
+          )}
         </div>
 
         {categories.length === 0 && (
           <div className="empty-state">
             <span className="empty-icon">◎</span>
-            <p>No categories yet. The 28 award categories were pre-seeded — run the SQL migration if you haven't.</p>
+            <p>No categories yet.</p>
           </div>
         )}
 
@@ -195,24 +211,23 @@ export default function AdminPanel({
 
           return (
             <div key={cat.id} className="cat-card glass-card">
-              {/* Category header */}
               <div className="cat-header" onClick={() => setExpandedCat(isOpen ? null : cat.id)}>
                 <div className="cat-header-left">
                   <span className="cat-chevron">{isOpen ? '▾' : '▸'}</span>
                   <span className="cat-name">{cat.name}</span>
                   <span className="cat-badge">{catContestants.length}</span>
                 </div>
-                <button
-                  className="btn-remove"
-                  onClick={e => { e.stopPropagation(); handleRemoveCategory(cat.id) }}
-                  aria-label="Remove category"
-                >✕</button>
+                {isSuperAdmin && (
+                  <button
+                    className="btn-remove"
+                    onClick={e => { e.stopPropagation(); handleRemoveCategory(cat.id) }}
+                    aria-label="Remove category"
+                  >✕</button>
+                )}
               </div>
 
-              {/* Expanded: contestants + add form */}
               {isOpen && (
                 <div className="cat-body">
-                  {/* Existing contestants */}
                   {catContestants.length > 0 && (
                     <div className="con-list">
                       {catContestants.map((c, i) => (
@@ -224,65 +239,65 @@ export default function AdminPanel({
                           <span className="con-num">{String(i + 1).padStart(2, '0')}</span>
                           <span className="con-name">{c.name}</span>
                           <span className="con-votes">{c.votes || 0}v</span>
-                          <button
-                            className="btn-remove"
-                            onClick={() => handleRemoveContestant(c.id, c.image_url)}
-                            aria-label={`Remove ${c.name}`}
-                          >✕</button>
+                          {isSuperAdmin && (
+                            <button
+                              className="btn-remove"
+                              onClick={() => handleRemoveContestant(c.id, c.image_url)}
+                              aria-label={`Remove ${c.name}`}
+                            >✕</button>
+                          )}
                         </div>
                       ))}
                     </div>
                   )}
 
-                  {/* Add contestant form */}
-                  <div className="con-add-form">
-                    <div className="input-row">
-                      <input
-                        className="text-input"
-                        placeholder="Contestant name..."
-                        value={conName[cat.id] || ''}
-                        onChange={e => { setConName(p => ({ ...p, [cat.id]: e.target.value })); setConError(p => ({ ...p, [cat.id]: '' })) }}
-                        onKeyDown={e => e.key === 'Enter' && handleAddContestant(cat.id)}
-                        disabled={busy}
-                        maxLength={40}
-                      />
+                  {isSuperAdmin && (
+                    <div className="con-add-form">
+                      <div className="input-row">
+                        <input
+                          className="text-input"
+                          placeholder="Contestant name..."
+                          value={conName[cat.id] || ''}
+                          onChange={e => { setConName(p => ({ ...p, [cat.id]: e.target.value })); setConError(p => ({ ...p, [cat.id]: '' })) }}
+                          onKeyDown={e => e.key === 'Enter' && handleAddContestant(cat.id)}
+                          disabled={busy}
+                          maxLength={40}
+                        />
+                      </div>
+                      <div className="image-upload">
+                        <input
+                          ref={el => { fileRefs.current[cat.id] = el }}
+                          type="file" accept="image/*"
+                          onChange={e => handleImageChange(cat.id, e)}
+                          className="file-input"
+                          id={`img-${cat.id}`}
+                          disabled={busy}
+                        />
+                        <label htmlFor={`img-${cat.id}`} className="file-label">
+                          {conPreview[cat.id] ? (
+                            <div className="preview-wrap">
+                              <img src={conPreview[cat.id]} alt="Preview" className="preview-img" />
+                              <button type="button" className="preview-remove"
+                                onClick={e => { e.preventDefault(); clearImage(cat.id) }}>✕</button>
+                            </div>
+                          ) : (
+                            <div className="file-placeholder">
+                              <span className="file-icon">📷</span>
+                              <span className="file-text">Add photo (optional)</span>
+                            </div>
+                          )}
+                        </label>
+                      </div>
+                      {conError[cat.id] && <p className="input-error">{conError[cat.id]}</p>}
+                      <button
+                        className="btn-primary add-btn"
+                        onClick={() => handleAddContestant(cat.id)}
+                        disabled={busy || !(conName[cat.id] || '').trim()}
+                      >
+                        {busy ? 'Adding...' : 'Add Contestant'}
+                      </button>
                     </div>
-
-                    <div className="image-upload">
-                      <input
-                        ref={el => { fileRefs.current[cat.id] = el }}
-                        type="file" accept="image/*"
-                        onChange={e => handleImageChange(cat.id, e)}
-                        className="file-input"
-                        id={`img-${cat.id}`}
-                        disabled={busy}
-                      />
-                      <label htmlFor={`img-${cat.id}`} className="file-label">
-                        {conPreview[cat.id] ? (
-                          <div className="preview-wrap">
-                            <img src={conPreview[cat.id]} alt="Preview" className="preview-img" />
-                            <button type="button" className="preview-remove"
-                              onClick={e => { e.preventDefault(); clearImage(cat.id) }}>✕</button>
-                          </div>
-                        ) : (
-                          <div className="file-placeholder">
-                            <span className="file-icon">📷</span>
-                            <span className="file-text">Add photo (optional)</span>
-                          </div>
-                        )}
-                      </label>
-                    </div>
-
-                    {conError[cat.id] && <p className="input-error">{conError[cat.id]}</p>}
-
-                    <button
-                      className="btn-primary add-btn"
-                      onClick={() => handleAddContestant(cat.id)}
-                      disabled={busy || !(conName[cat.id] || '').trim()}
-                    >
-                      {busy ? 'Adding...' : 'Add Contestant'}
-                    </button>
-                  </div>
+                  )}
                 </div>
               )}
             </div>

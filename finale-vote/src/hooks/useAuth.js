@@ -24,16 +24,16 @@ export function validateUnimaEmail(email) {
 }
 
 async function checkIsAdmin(email) {
-  if (!email) return { isAdmin: false, name: null }
+  if (!email) return { isAdmin: false, name: null, role: null }
   try {
     const { data } = await supabase
       .from('admins')
-      .select('email, name')
+      .select('email, name, role')
       .eq('email', email.toLowerCase())
       .maybeSingle()
-    return { isAdmin: !!data, name: data?.name || null }
+    return { isAdmin: !!data, name: data?.name || null, role: data?.role || null }
   } catch {
-    return { isAdmin: false, name: null }
+    return { isAdmin: false, name: null, role: null }
   }
 }
 
@@ -55,7 +55,7 @@ export function useAuth() {
       if (!mounted) return
 
       if (isAdmin) {
-        setUser({ email, isAdmin: true, name })
+        setUser({ email, isAdmin: true, name, role })
       } else {
         const { valid } = validateUnimaEmail(email)
         if (valid) {

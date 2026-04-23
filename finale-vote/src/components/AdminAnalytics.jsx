@@ -33,7 +33,7 @@ function buildTimeline(voteLog, contestants) {
   })
 }
 
-export default function AdminAnalytics({ categories, contestants, totalVotes, voteLog, isAdmin, onDeleteVote }) {
+export default function AdminAnalytics({ categories, contestants, totalVotes, voteLog, isAdmin, isSuperAdmin, onDeleteVote }) {
   const [deletingId, setDeletingId] = useState(null)
   const [filterEmail, setFilterEmail] = useState('')
   const [filterCat, setFilterCat] = useState('all')
@@ -363,8 +363,8 @@ export default function AdminAnalytics({ categories, contestants, totalVotes, vo
                         try { await onDeleteVote(v.id, v.contestant_id) }
                         finally { setDeletingId(null) }
                       }}
-                      disabled={deletingId === v.id}
-                      title="Delete this vote"
+                      disabled={deletingId === v.id || !isSuperAdmin}
+                      title={!isSuperAdmin ? 'Super admin access required' : 'Delete this vote'}
                     >
                       {deletingId === v.id ? '...' : '✕'}
                     </button>

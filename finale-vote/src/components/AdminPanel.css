@@ -1,5 +1,19 @@
 .admin { display: flex; flex-direction: column; gap: 16px; }
 
+/* Viewer notice */
+.viewer-notice {
+  display: flex; align-items: center; gap: 14px;
+  padding: 16px 20px; border-radius: 12px;
+  background: var(--surface); border-color: var(--border);
+}
+.viewer-notice-icon { font-size: 20px; flex-shrink: 0; }
+.viewer-notice-title {
+  display: block; font-size: 13px; font-weight: 700; color: var(--text);
+}
+.viewer-notice-desc {
+  display: block; font-size: 12px; color: var(--text-muted); margin-top: 2px;
+}
+
 /* Voting toggle */
 .voting-toggle-card {
   display: flex; align-items: center; justify-content: space-between;

@@ -24,6 +24,7 @@ function Inner() {
   const { votingOpen, resultsVisible, statusLoading, setVotingOpen, setResultsVisible } = useVotingStatus()
 
   const isAdmin = user?.isAdmin === true
+  const isSuperAdmin = user?.role === 'super'
   const loading = catLoading || conLoading || statusLoading
   const totalVotes = contestants.reduce((a, c) => a + (c.votes || 0), 0)
 
@@ -93,7 +94,7 @@ function Inner() {
             <span className="user-email">
               {isAdmin ? (user.name || user.email?.split('@')[0]) : user.email?.split('@')[0]}
             </span>
-            {isAdmin && <span className="admin-badge">Admin</span>}
+            {isAdmin && <span className="admin-badge">{isSuperAdmin ? 'Super Admin' : 'Viewer'}</span>}
             <button className="sign-out-btn" onClick={signOut} title="Sign out">
               Sign out
             </button>
@@ -169,6 +170,7 @@ function Inner() {
                     onToggleVoting={setVotingOpen}
                     resultsVisible={resultsVisible}
                     onToggleResults={setResultsVisible}
+                    isSuperAdmin={isSuperAdmin}
                   />
                 )}
                 {adminTab === 'analytics' && (
@@ -178,6 +180,7 @@ function Inner() {
                     totalVotes={totalVotes}
                     voteLog={voteLog}
                     isAdmin={isAdmin}
+                    isSuperAdmin={isSuperAdmin}
                     onDeleteVote={deleteVote}
                   />
                 )}
@@ -193,9 +196,6 @@ function Inner() {
             <span>© {new Date().getFullYear()} Finale Electoral Committee</span>
             <span className="footer-sep">·</span>
             <span>Supported by Finale Dinner Committee</span>
-          </div>
-          <div className="footer-row footer-dev">
-            Developed by <strong>Lusekero Mwanjoka</strong>
           </div>
         </div>
       </footer>
