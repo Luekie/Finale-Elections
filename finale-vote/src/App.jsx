@@ -18,7 +18,7 @@ function Inner() {
   const [adminTab, setAdminTab] = useState('manage')
 
   const { user, authLoading, signIn, signUp, signInAdmin, signOut } = useAuth()
-  const { categories, loading: catLoading, addCategory, removeCategory } = useCategories()
+  const { categories, loading: catLoading, addCategory, removeCategory, reorderCategories } = useCategories()
   const { contestants, loading: conLoading, addContestant, removeContestant, resetVotes } = useContestants()
   const { votes, voteLog, saveVote, saveAllVotes, deleteVote, hasVotedInCategory, votedForInCategory } = useVoting(user?.email)
   const { votingOpen, resultsVisible, statusLoading, setVotingOpen, setResultsVisible } = useVotingStatus()
@@ -156,6 +156,7 @@ function Inner() {
                     contestants={contestants}
                     onAddCategory={addCategory}
                     onRemoveCategory={removeCategory}
+                    onReorderCategories={reorderCategories}
                     onAddContestant={addContestant}
                     onRemoveContestant={removeContestant}
                     onReset={resetVotes}

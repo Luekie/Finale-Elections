@@ -212,3 +212,15 @@
   .input-row { flex-direction: column; }
   .btn-primary { width: 100%; }
 }
+
+/* ── Drag handle ── */
+.drag-handle {
+  cursor: grab;
+  font-size: 16px;
+  opacity: 0.35;
+  padding: 0 4px;
+  user-select: none;
+  flex-shrink: 0;
+}
+.drag-handle:active { cursor: grabbing; }
+.cat-card[draggable="true"]:hover { outline: 1px dashed var(--border); }

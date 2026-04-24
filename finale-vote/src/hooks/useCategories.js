@@ -43,5 +43,13 @@ export function useCategories() {
     await fetchCategories()
   }
 
-  return { categories, loading, addCategory, removeCategory }
+  const reorderCategories = async (reordered) => {
+    setCategories(reordered) // optimistic update
+    const updates = reordered.map((cat, i) =>
+      supabase.from('categories').update({ display_order: i + 1 }).eq('id', cat.id)
+    )
+    await Promise.all(updates)
+  }
+
+  return { categories, loading, addCategory, removeCategory, reorderCategories }
 }

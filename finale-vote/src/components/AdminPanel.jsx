@@ -3,7 +3,7 @@ import './AdminPanel.css'
 
 export default function AdminPanel({
   categories, contestants,
-  onAddCategory, onRemoveCategory,
+  onAddCategory, onRemoveCategory, onReorderCategories,
   onAddContestant, onRemoveContestant,
   onReset, votingOpen, onToggleVoting,
   resultsVisible, onToggleResults,
@@ -22,6 +22,8 @@ export default function AdminPanel({
   const [togglingVote, setTogglingVote] = useState(false)
   const [togglingResults, setTogglingResults] = useState(false)
   const [resetting, setResetting] = useState(false)
+  const dragItem = useRef(null)
+  const dragOver = useRef(null)
 
   const handleToggleVoting = async () => {
     setTogglingVote(true)
@@ -104,6 +106,19 @@ export default function AdminPanel({
     setResetting(true)
     try { await onReset() }
     finally { setResetting(false) }
+  }
+
+  const handleDragStart = (index) => { dragItem.current = index }
+  const handleDragEnter = (index) => { dragOver.current = index }
+  const handleDragEnd = () => {
+    if (dragItem.current === null || dragOver.current === null || dragItem.current === dragOver.current) {
+      dragItem.current = null; dragOver.current = null; return
+    }
+    const reordered = [...categories]
+    const [moved] = reordered.splice(dragItem.current, 1)
+    reordered.splice(dragOver.current, 0, moved)
+    dragItem.current = null; dragOver.current = null
+    onReorderCategories(reordered)
   }
 
   return (
@@ -203,15 +218,24 @@ export default function AdminPanel({
           </div>
         )}
 
-        {categories.map((cat) => {
+        {categories.map((cat, index) => {
           const catContestants = contestants.filter(c => c.category_id === cat.id)
           const isOpen = expandedCat === cat.id
           const busy = conLoading[cat.id]
 
           return (
-            <div key={cat.id} className={`cat-card glass-card ${isOpen ? 'is-open' : ''}`}>
+            <div
+              key={cat.id}
+              className={`cat-card glass-card ${isOpen ? 'is-open' : ''}`}
+              draggable={isSuperAdmin}
+              onDragStart={() => handleDragStart(index)}
+              onDragEnter={() => handleDragEnter(index)}
+              onDragEnd={handleDragEnd}
+              onDragOver={e => e.preventDefault()}
+            >
               <div className="cat-header" onClick={() => setExpandedCat(isOpen ? null : cat.id)}>
                 <div className="cat-header-left">
+                  {isSuperAdmin && <span className="drag-handle" title="Drag to reorder">⠿</span>}
                   <svg className={`cat-chevron-icon ${isOpen ? 'open' : ''}`} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                     <polyline points="6 9 12 15 18 9"/>
                   </svg>
