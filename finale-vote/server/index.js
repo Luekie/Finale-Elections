@@ -1,11 +1,12 @@
 require('dotenv').config()
 const express = require('express')
-const nodemailer = require('nodemailer')
+const { Resend } = require('resend')
 const cors = require('cors')
 const crypto = require('crypto')
 
 const app = express()
 app.use(express.json())
+
 const allowedOrigins = (process.env.CLIENT_ORIGIN || '*').split(',').map(o => o.trim())
 app.use(cors({
   origin: (origin, callback) => {
@@ -17,18 +18,10 @@ app.use(cors({
   }
 }))
 
+const resend = new Resend(process.env.RESEND_API_KEY)
+
 const SUPABASE_URL = process.env.SUPABASE_URL
 const SUPABASE_SERVICE_KEY = process.env.SUPABASE_SERVICE_KEY
-
-const transporter = nodemailer.createTransport({
-  host: 'smtp.gmail.com',
-  port: 465,
-  secure: true,
-  auth: {
-    user: process.env.GMAIL_USER,
-    pass: process.env.GMAIL_APP_PASSWORD,
-  },
-})
 
 const otpStore = new Map()
 const OTP_EXPIRY_MS = 10 * 60 * 1000
@@ -64,20 +57,26 @@ app.post('/api/send-otp', async (req, res) => {
   otpStore.set(email.toLowerCase(), { otp, expiresAt: Date.now() + OTP_EXPIRY_MS, attempts: 0 })
 
   try {
-    await transporter.sendMail({
-      from: `"${process.env.GMAIL_FROM || 'Finale Elections'}" <${process.env.GMAIL_USER}>`,
+    const { error } = await resend.emails.send({
+      from: `${process.env.RESEND_FROM || 'Finale Elections'} <onboarding@resend.dev>`,
       to: email,
       subject: 'Your voting verification code',
       html: `
         <div style="font-family:sans-serif;max-width:480px;margin:0 auto;padding:32px;background:#0f0f0f;color:#fff;border-radius:12px;">
-          <h2 style="margin:0 0 8px;font-size:20px;">Class of 2026 ✦</h2>
-          <p style="color:#aaa;font-size:13px;margin:0 0 32px;">Double Cohort Voting System</p>
+          <h2 style="margin:0 0 8px;font-size:20px;">Finale Elections ✦</h2>
+          <p style="color:#aaa;font-size:13px;margin:0 0 32px;">Voting Verification</p>
           <p style="font-size:15px;margin:0 0 16px;">Your verification code is:</p>
           <div style="font-size:40px;font-weight:800;letter-spacing:0.2em;padding:20px;background:#1a1a1a;border-radius:10px;text-align:center;">${otp}</div>
           <p style="color:#888;font-size:12px;margin:24px 0 0;">Expires in 10 minutes. Do not share this code.</p>
         </div>
       `,
     })
+
+    if (error) {
+      console.error('Resend error:', error)
+      return res.status(500).json({ error: 'Failed to send email. Try again.' })
+    }
+
     res.json({ success: true })
   } catch (err) {
     console.error('Mail error:', err.message)
@@ -109,7 +108,6 @@ app.post('/api/verify-otp', async (req, res) => {
   otpStore.delete(key)
 
   try {
-    // Step 1: Create user (or get existing)
     let userId
     const create = await supabaseAdmin('/auth/v1/admin/users', 'POST', {
       email: key,
@@ -120,7 +118,6 @@ app.post('/api/verify-otp', async (req, res) => {
     if (create.ok && create.data.id) {
       userId = create.data.id
     } else {
-      // User likely already exists — list and find
       const list = await supabaseAdmin('/auth/v1/admin/users?page=1&per_page=1000')
       if (!list.ok) {
         console.error('List users failed:', list.data)
@@ -134,30 +131,22 @@ app.post('/api/verify-otp', async (req, res) => {
       userId = found.id
     }
 
-    // Step 2: Generate magic link using the correct endpoint
     const link = await supabaseAdmin('/auth/v1/admin/generate_link', 'POST', {
       type: 'magiclink',
       email: key,
     })
-
-    console.log('Generate link response:', JSON.stringify(link.data))
 
     if (!link.ok || !link.data.action_link) {
       console.error('Generate link failed:', link.data)
       return res.status(500).json({ error: 'Failed to create session.' })
     }
 
-    // Extract hashed_token from the action_link URL fragment
     const url = new URL(link.data.action_link)
-    // action_link format: https://.../#access_token=...&token_hash=...&type=magiclink
-    // OR query params depending on Supabase version
     const hashParams = new URLSearchParams(url.hash.replace('#', ''))
     const queryParams = url.searchParams
-
     const token = hashParams.get('token_hash') || queryParams.get('token') || hashParams.get('access_token')
     const type = hashParams.get('type') || queryParams.get('type') || 'magiclink'
 
-    console.log('token:', token, 'type:', type)
     res.json({ success: true, token, type, email: key, action_link: link.data.action_link })
   } catch (err) {
     console.error('Auth error:', err.message)
