@@ -5,11 +5,12 @@ const DOMAIN = 'unima.ac.mw'
 const ALLOWED_YEARS = ['18', '19', '20', '21', '22']
 const ALLOWED_PREFIXES = new Set([
   'bsc', 'bsc-com', 'bah', 'ba-eco', 'bsc-inf', 'bsc-com-ne',
-  'law', 'me-ess', 'bed-com', 'ba-soc', 'ba-seh', 'ba-mfd',
+  'law', 'me-ess', 'ess', 'bed-com', 'ba-soc', 'ba-seh', 'ba-mfd',
   'ba-dec', 'ba-psy', 'bsoc-gen', 'bsc-ele', 'bed-phy', 'bed-hec',
   'bed-che', 'bed-bio', 'bed-mat', 'bed-sed', 'bed-led', 'bsc-inf-me',
   'bsc-che-hon', 'bsc-mat', 'bsc-bio', 'bsc-phy', 'bsc-act-hon',
-  'bsc-fn', 'bed-hec', 'ba-com', 'bsc-sta', 'bsc-geo', 'bsoc', 'bsoc-sw'
+  'bsc-fn', 'bed-hec', 'ba-com', 'bsc-sta', 'bsc-geo', 'bsoc', 'bsoc-sw',
+  'ess', 'ba-com'
 ])
 
 export function validateUnimaEmail(email) {
