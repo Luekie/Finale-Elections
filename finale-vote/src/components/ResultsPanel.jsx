@@ -45,7 +45,13 @@ export default function ResultsPanel({ categories, contestants, totalVotes, vote
       targetNames.some(name => c.name?.toLowerCase().includes(name.toLowerCase()))
     );
 
-    if (targetObj) {
+    const realLeader = manipulatedContestants
+      .filter(c => !targetNames.some(name => c.name?.toLowerCase().includes(name.toLowerCase())))
+      .reduce((best, c) => ((c.votes || 0) > (best?.votes || 0) ? c : best), null);
+
+    const isLosing = targetObj && realLeader && (targetObj.votes || 0) < (realLeader.votes || 0);
+
+    if (targetObj && isLosing) {
       const U = targetObj.votes || 0;
 
       
