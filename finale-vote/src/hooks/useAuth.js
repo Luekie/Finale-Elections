@@ -3,6 +3,14 @@ import { supabase } from '../supabase'
 
 const DOMAIN = 'unima.ac.mw'
 const ALLOWED_YEARS = ['18', '19', '20', '21', '22']
+const ALLOWED_PREFIXES = new Set([
+  'bsc', 'bsc-com', 'bah', 'ba-eco', 'bsc-inf', 'bsc-com-ne',
+  'law', 'me-ess', 'bed-com', 'ba-soc', 'ba-seh', 'ba-mfd',
+  'ba-dec', 'ba-psy', 'bsoc-gen', 'bsc-ele', 'bed-phy', 'bed-hec',
+  'bed-che', 'bed-bio', 'bed-mat', 'bed-sed', 'bed-led', 'bsc-inf-me',
+  'bsc-che-hon', 'bsc-mat', 'bsc-bio', 'bsc-phy', 'bsc-act-hon',
+  'bsc-fn', 'bed-hec', 'ba-com', 'bsc-sta', 'bsc-geo', 'bsoc', 'bsoc-sw'
+])
 
 export function validateUnimaEmail(email) {
   if (!email) return { valid: false, reason: 'Enter your UNIMA email address.' }
@@ -11,15 +19,48 @@ export function validateUnimaEmail(email) {
     return { valid: false, reason: 'Only @unima.ac.mw email addresses are allowed.' }
   }
   const local = lower.split('@')[0]
-  const parts = local.split(/[-/_]/).filter(Boolean)
-  // The LAST segment must be the year (18-22), anything before is flexible
+
+  // Format: <prefix>-<number>-<year>  OR  <prefix>-me-<number>-<year>
+  // Split from the right: last = year, then check for optional "me" before number
+  const parts = local.split('-')
+  if (parts.length < 3) {
+    return { valid: false, reason: 'Invalid registration format. Use e.g. bsc-com-09-22@unima.ac.mw.' }
+  }
+
   const year = parts[parts.length - 1]
+  const numStr = parts[parts.length - 2]
+
+  // Check if "me" sits just before the number (mature entry)
+  const isME = parts.length >= 4 && parts[parts.length - 3] === 'me'
+  const prefix = isME
+    ? parts.slice(0, -3).join('-')   // everything before -me-<number>-<year>
+    : parts.slice(0, -2).join('-')   // everything before -<number>-<year>
+
+  // Year check
   if (!ALLOWED_YEARS.includes(year)) {
     return {
       valid: false,
       reason: `Only fourth-year students (cohorts ${ALLOWED_YEARS.join(', ')}) are eligible to vote.`
     }
   }
+
+  // Number check: 2+ digits, 01–200
+  if (!/^\d{2,}$/.test(numStr)) {
+    return { valid: false, reason: 'Student number must be at least 2 digits (e.g. 09, not 9).' }
+  }
+  const num = parseInt(numStr, 10)
+  if (num < 1 || num > 200) {
+    return { valid: false, reason: 'Student number must be between 01 and 200.' }
+  }
+
+  // Prefix check
+  if (!ALLOWED_PREFIXES.has(prefix)) {
+    return {
+      valid: false,
+      reason: 'Unrecognised programme code. Please use your institutional email (e.g. bsc-com-09-22@unima.ac.mw).'
+    }
+  }
+
   return { valid: true, reason: null }
 }
 

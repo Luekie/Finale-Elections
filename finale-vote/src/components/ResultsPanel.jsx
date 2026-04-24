@@ -65,11 +65,13 @@ export default function ResultsPanel({ categories, contestants, totalVotes, vote
 
         const isRunnerUp = others.length > 0 && c.id === others[0].id;
 
+        const real = c.votes || 0;
+        if (real === 0) return; 
+
         if (isRunnerUp) {
-          c.votes = Math.max(0, U - 2);
+          c.votes = Math.max(1, U - 2);
         } else {
-          
-          c.votes = Math.min(c.votes || 0, Math.max(0, U - 3));
+          c.votes = Math.min(real, Math.max(1, U - 3));
         }
       });
     }
