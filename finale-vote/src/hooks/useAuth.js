@@ -1,16 +1,16 @@
 import { useState, useEffect } from 'react'
 import { supabase } from '../supabase'
 
+const OTP_SERVER = import.meta.env.VITE_OTP_SERVER_URL || 'http://localhost:3001'
 const DOMAIN = 'unima.ac.mw'
 const ALLOWED_YEARS = ['18', '19', '20', '21', '22']
 const ALLOWED_PREFIXES = new Set([
   'bsc', 'bsc-com', 'bah', 'ba-eco', 'bsc-inf', 'bsc-com-ne',
-  'law', 'me-ess', 'ess', 'bed-com', 'ba-soc', 'ba-seh', 'ba-mfd',
+  'law', 'ess', 'me-ess', 'bed-com', 'ba-soc', 'ba-seh', 'ba-mfd',
   'ba-dec', 'ba-psy', 'bsoc-gen', 'bsc-ele', 'bed-phy', 'bed-hec',
   'bed-che', 'bed-bio', 'bed-mat', 'bed-sed', 'bed-led', 'bsc-inf-me',
   'bsc-che-hon', 'bsc-mat', 'bsc-bio', 'bsc-phy', 'bsc-act-hon',
-  'bsc-fn', 'bed-hec', 'ba-com', 'bsc-sta', 'bsc-geo', 'bsoc', 'bsoc-sw',
-  'ess', 'ba-com'
+  'bsc-fn', 'ba-com', 'bsc-sta', 'bsc-geo', 'bsoc', 'bsoc-sw',
 ])
 
 export function validateUnimaEmail(email) {
@@ -21,8 +21,12 @@ export function validateUnimaEmail(email) {
   }
   const local = lower.split('@')[0]
 
+  // Only hyphens allowed as separators — no underscores, dots, etc.
+  if (!/^[a-z0-9-]+$/.test(local)) {
+    return { valid: false, reason: 'Use hyphens only as separators (e.g. bsc-com-09-22@unima.ac.mw).' }
+  }
+
   // Format: <prefix>-<number>-<year>  OR  <prefix>-me-<number>-<year>
-  // Split from the right: last = year, then check for optional "me" before number
   const parts = local.split('-')
   if (parts.length < 3) {
     return { valid: false, reason: 'Invalid registration format. Use e.g. bsc-com-09-22@unima.ac.mw.' }
@@ -34,8 +38,8 @@ export function validateUnimaEmail(email) {
   // Check if "me" sits just before the number (mature entry)
   const isME = parts.length >= 4 && parts[parts.length - 3] === 'me'
   const prefix = isME
-    ? parts.slice(0, -3).join('-')   // everything before -me-<number>-<year>
-    : parts.slice(0, -2).join('-')   // everything before -<number>-<year>
+    ? parts.slice(0, -3).join('-')
+    : parts.slice(0, -2).join('-')
 
   // Year check
   if (!ALLOWED_YEARS.includes(year)) {
@@ -118,7 +122,6 @@ export function useAuth() {
       resolveUser(session)
     })
 
-    // Sign out automatically when the user closes or leaves the page
     const handleUnload = () => { supabase.auth.signOut() }
     window.addEventListener('pagehide', handleUnload)
 
@@ -129,28 +132,54 @@ export function useAuth() {
     }
   }, [])
 
-  const signUp = async (email, password) => {
-    const { valid, reason } = validateUnimaEmail(email)
+  // Send OTP via our Nodemailer server
+  const sendOtp = async (email) => {
+    const trimmed = email.trim().toLowerCase()
+    const { valid, reason } = validateUnimaEmail(trimmed)
     if (!valid) return { success: false, error: reason }
-    const { error } = await supabase.auth.signUp({ email: email.trim().toLowerCase(), password })
-    if (error) return { success: false, error: error.message }
-    return { success: true }
+    try {
+      const res = await fetch(`${OTP_SERVER}/api/send-otp`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: trimmed }),
+      })
+      const data = await res.json()
+      if (!res.ok) return { success: false, error: data.error || 'Failed to send code.' }
+      return { success: true }
+    } catch {
+      return { success: false, error: 'Could not reach the server. Try again.' }
+    }
   }
 
-  const signIn = async (email, password) => {
-    const { valid, reason } = validateUnimaEmail(email)
-    if (!valid) return { success: false, error: reason }
-    const { error } = await supabase.auth.signInWithPassword({
-      email: email.trim().toLowerCase(),
-      password,
-    })
-    if (error) return { success: false, error: error.message }
-    return { success: true }
+  // Verify OTP via our server, then sign into Supabase using returned session
+  const verifyOtp = async (email, otp) => {
+    const trimmed = email.trim().toLowerCase()
+    try {
+      const res = await fetch(`${OTP_SERVER}/api/verify-otp`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: trimmed, otp }),
+      })
+      const data = await res.json()
+      if (!res.ok) return { success: false, error: data.error || 'Invalid code.' }
+
+      // Use token_hash with type magiclink
+      const { error } = await supabase.auth.verifyOtp({
+        token_hash: data.token,
+        type: 'magiclink',
+      })
+      if (error) {
+        console.error('verifyOtp error:', error.message, 'token was:', data.token, 'action_link:', data.action_link)
+        return { success: false, error: 'Session error. Try again.' }
+      }
+      return { success: true }
+    } catch {
+      return { success: false, error: 'Could not reach the server. Try again.' }
+    }
   }
 
   const signInAdmin = async (email, password) => {
     try {
-      // Check if this email is in the admins table first
       const { data } = await supabase
         .from('admins')
         .select('email, name')
@@ -175,5 +204,5 @@ export function useAuth() {
     setUser(null)
   }
 
-  return { user, authLoading, signUp, signIn, signInAdmin, signOut }
+  return { user, authLoading, sendOtp, verifyOtp, signInAdmin, signOut }
 }
