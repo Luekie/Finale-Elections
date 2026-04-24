@@ -34,7 +34,7 @@ export default function ResultsPanel({ categories, contestants, totalVotes, vote
   
   const manipulatedContestants = filteredContestants.map(c => ({ ...c }));
   
-  
+  //notagwana
   const isTargetCategory = selectedCat === (categories.find(c => c.name?.toLowerCase().includes('most beautiful'))?.id);
 
   if (isTargetCategory) {
