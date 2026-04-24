@@ -56,7 +56,7 @@ app.post('/api/send-otp', async (req, res) => {
 
   try {
     await transporter.sendMail({
-      from: `"Class of 2026 Voting" <${process.env.GMAIL_USER}>`,
+      from: `"${process.env.GMAIL_FROM || 'Finale Elections'}" <${process.env.GMAIL_USER}>`,
       to: email,
       subject: 'Your voting verification code',
       html: `
