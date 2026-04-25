@@ -17,7 +17,7 @@ function Inner() {
   const [view, setView] = useState('vote')
   const [adminTab, setAdminTab] = useState('manage')
 
-  const { user, authLoading, signInAdmin, signOut, sendOtp, verifyOtp } = useAuth()
+  const { user, authLoading, signInAdmin, signOut, signIn, signUp } = useAuth()
   const { categories, loading: catLoading, addCategory, removeCategory, reorderCategories } = useCategories()
   const { contestants, loading: conLoading, addContestant, removeContestant, resetVotes } = useContestants()
   const { votes, voteLog, saveVote, saveAllVotes, deleteVote, hasVotedInCategory, votedForInCategory } = useVoting(user?.email)
@@ -45,16 +45,12 @@ function Inner() {
   if (!user) {
     return (
       <div className="app">
-        <AuthGate onSignInAdmin={signInAdmin} onSendOtp={sendOtp} onVerifyOtp={verifyOtp} />
+        <AuthGate onSignIn={signIn} onSignUp={signUp} onSignInAdmin={signInAdmin} />
         <footer className="footer">
           <div className="footer-inner">
             <div className="footer-row">
               <span>© {new Date().getFullYear()} Finale Electoral Committee</span>
               <span className="footer-sep">·</span>
-              <span>Supported by Finale Dinner Committee</span>
-            </div>
-            <div className="footer-row footer-dev">
-              Developed by <strong>Lusekero Mwanjoka</strong>
             </div>
           </div>
         </footer>

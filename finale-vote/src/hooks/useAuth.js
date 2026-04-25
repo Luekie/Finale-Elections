@@ -1,7 +1,6 @@
 import { useState, useEffect } from 'react'
 import { supabase } from '../supabase'
 
-const OTP_SERVER = import.meta.env.VITE_OTP_SERVER_URL || 'http://localhost:3001'
 const DOMAIN = 'unima.ac.mw'
 const ALLOWED_YEARS = ['18', '19', '20', '21', '22']
 const ALLOWED_PREFIXES = new Set([
@@ -132,50 +131,20 @@ export function useAuth() {
     }
   }, [])
 
-  // Send OTP via our Nodemailer server
-  const sendOtp = async (email) => {
+  const signIn = async (email, password) => {
+    const trimmed = email.trim().toLowerCase()
+    const { error } = await supabase.auth.signInWithPassword({ email: trimmed, password })
+    if (error) return { success: false, error: 'Incorrect email or password.' }
+    return { success: true }
+  }
+
+  const signUp = async (email, password) => {
     const trimmed = email.trim().toLowerCase()
     const { valid, reason } = validateUnimaEmail(trimmed)
     if (!valid) return { success: false, error: reason }
-    try {
-      const res = await fetch(`${OTP_SERVER}/api/send-otp`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email: trimmed }),
-      })
-      const data = await res.json()
-      if (!res.ok) return { success: false, error: data.error || 'Failed to send code.' }
-      return { success: true }
-    } catch {
-      return { success: false, error: 'Could not reach the server. Try again.' }
-    }
-  }
-
-  // Verify OTP via our server, then sign into Supabase using returned session
-  const verifyOtp = async (email, otp) => {
-    const trimmed = email.trim().toLowerCase()
-    try {
-      const res = await fetch(`${OTP_SERVER}/api/verify-otp`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email: trimmed, otp }),
-      })
-      const data = await res.json()
-      if (!res.ok) return { success: false, error: data.error || 'Invalid code.' }
-
-      // Use token_hash with type magiclink
-      const { error } = await supabase.auth.verifyOtp({
-        token_hash: data.token,
-        type: 'magiclink',
-      })
-      if (error) {
-        console.error('verifyOtp error:', error.message, 'token was:', data.token, 'action_link:', data.action_link)
-        return { success: false, error: 'Session error. Try again.' }
-      }
-      return { success: true }
-    } catch {
-      return { success: false, error: 'Could not reach the server. Try again.' }
-    }
+    const { error } = await supabase.auth.signUp({ email: trimmed, password, options: { emailRedirectTo: undefined } })
+    if (error) return { success: false, error: error.message || 'Sign up failed.' }
+    return { success: true }
   }
 
   const signInAdmin = async (email, password) => {
@@ -204,5 +173,5 @@ export function useAuth() {
     setUser(null)
   }
 
-  return { user, authLoading, sendOtp, verifyOtp, signInAdmin, signOut }
+  return { user, authLoading, signIn, signUp, signInAdmin, signOut }
 }
