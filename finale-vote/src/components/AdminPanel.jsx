@@ -4,7 +4,7 @@ import './AdminPanel.css'
 export default function AdminPanel({
   categories, contestants,
   onAddCategory, onRemoveCategory, onReorderCategories,
-  onAddContestant, onRemoveContestant,
+  onAddContestant, onRemoveContestant, onUpdateContestantPhoto,
   onReset, votingOpen, onToggleVoting,
   resultsVisible, onToggleResults,
   isSuperAdmin
@@ -22,6 +22,8 @@ export default function AdminPanel({
   const [togglingVote, setTogglingVote] = useState(false)
   const [togglingResults, setTogglingResults] = useState(false)
   const [resetting, setResetting] = useState(false)
+  const [photoLoading, setPhotoLoading] = useState({})
+  const photoRefs = useRef({})
   const dragItem = useRef(null)
   const dragOver = useRef(null)
 
@@ -99,6 +101,20 @@ export default function AdminPanel({
   const handleRemoveContestant = async (id, imageUrl) => {
     if (!confirm('Remove this contestant?')) return
     await onRemoveContestant(id, imageUrl)
+  }
+
+  const handlePhotoChange = async (contestantId, e) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+    if (!file.type.startsWith('image/')) return
+    if (file.size > 5 * 1024 * 1024) return
+    setPhotoLoading(p => ({ ...p, [contestantId]: true }))
+    try { await onUpdateContestantPhoto(contestantId, file) }
+    catch { /* silent */ }
+    finally {
+      setPhotoLoading(p => ({ ...p, [contestantId]: false }))
+      if (photoRefs.current[contestantId]) photoRefs.current[contestantId].value = ''
+    }
   }
 
   const handleReset = async () => {
@@ -265,11 +281,24 @@ export default function AdminPanel({
                           <span className="con-name">{c.name}</span>
                           <span className="con-votes">{c.votes || 0}v</span>
                           {isSuperAdmin && (
-                            <button
-                              className="btn-remove"
-                              onClick={() => handleRemoveContestant(c.id, c.image_url)}
-                              aria-label={`Remove ${c.name}`}
-                            >✕</button>
+                            <>
+                              <input
+                                ref={el => { photoRefs.current[c.id] = el }}
+                                type="file" accept="image/*"
+                                className="file-input"
+                                id={`photo-${c.id}`}
+                                onChange={e => handlePhotoChange(c.id, e)}
+                                disabled={photoLoading[c.id]}
+                              />
+                              <label htmlFor={`photo-${c.id}`} className="btn-photo" title="Update photo">
+                                {photoLoading[c.id] ? '...' : '📷'}
+                              </label>
+                              <button
+                                className="btn-remove"
+                                onClick={() => handleRemoveContestant(c.id, c.image_url)}
+                                aria-label={`Remove ${c.name}`}
+                              >✕</button>
+                            </>
                           )}
                         </div>
                       ))}

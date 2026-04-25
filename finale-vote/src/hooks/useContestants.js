@@ -74,5 +74,23 @@ export function useContestants() {
     await fetchContestants()
   }
 
-  return { contestants, loading, addContestant, removeContestant, resetVotes }
+  const updateContestantPhoto = async (id, imageFile) => {
+    const ext = imageFile.name.split('.').pop()
+    const fileName = `${id}.${ext}`
+    const { error: upErr } = await supabase.storage
+      .from('contestant-photos')
+      .upload(fileName, imageFile, { upsert: true })
+    if (upErr) throw upErr
+    const { data: { publicUrl } } = supabase.storage
+      .from('contestant-photos')
+      .getPublicUrl(fileName)
+    const { error } = await supabase
+      .from('contestants')
+      .update({ image_url: publicUrl })
+      .eq('id', id)
+    if (error) throw error
+    await fetchContestants()
+  }
+
+  return { contestants, loading, addContestant, removeContestant, resetVotes, updateContestantPhoto }
 }
