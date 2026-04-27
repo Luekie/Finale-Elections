@@ -21,7 +21,7 @@ function Inner() {
   const { categories, loading: catLoading, addCategory, removeCategory, reorderCategories } = useCategories()
   const { contestants, loading: conLoading, addContestant, removeContestant, resetVotes, updateContestantPhoto, updateContestantName, reorderContestants } = useContestants()
   const { votes, voteLog, saveVote, saveAllVotes, deleteVote, hasVotedInCategory, votedForInCategory } = useVoting(user?.email)
-  const { votingOpen, resultsVisible, statusLoading, setVotingOpen, setResultsVisible } = useVotingStatus()
+  const { votingOpen, resultsVisible, statusLoading, scheduledTime, setVotingOpen, setResultsVisible, setScheduledVotingTime } = useVotingStatus()
 
   const isAdmin = user?.isAdmin === true
   const isSuperAdmin = user?.role === 'super'
@@ -164,6 +164,8 @@ function Inner() {
                     onToggleVoting={setVotingOpen}
                     resultsVisible={resultsVisible}
                     onToggleResults={setResultsVisible}
+                    scheduledTime={scheduledTime}
+                    onSetScheduledTime={setScheduledVotingTime}
                     isSuperAdmin={isSuperAdmin}
                     isElectionController={isElectionController}
                   />

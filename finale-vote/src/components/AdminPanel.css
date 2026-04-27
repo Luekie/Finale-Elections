@@ -35,6 +35,114 @@
 .vt-btn-close { background: transparent; color: var(--danger); border-color: var(--danger-border); }
 .vt-btn-close:hover:not(:disabled) { background: var(--danger-bg); }
 
+.vt-btn-schedule {
+  background: transparent;
+  color: var(--text);
+  border-color: var(--border-strong);
+}
+.vt-btn-schedule:hover:not(:disabled) {
+  background: var(--surface-hover);
+}
+
+.vt-scheduled {
+  display: block;
+  font-size: 11px;
+  color: var(--text);
+  margin-top: 4px;
+  font-weight: 600;
+}
+
+/* ── Schedule panel ── */
+.schedule-panel {
+  padding: 16px 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.schedule-title {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--text);
+  margin: 0;
+}
+
+.schedule-content {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.btn-quick-schedule {
+  background: var(--surface-hover);
+  color: var(--text);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 10px 14px;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+  font-family: 'Inter', sans-serif;
+}
+
+.btn-quick-schedule:hover {
+  background: var(--surface);
+  border-color: var(--border-strong);
+}
+
+.schedule-input-row {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.schedule-input {
+  flex: 1;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 9px;
+  padding: 10px 13px;
+  color: var(--text);
+  font-size: 13px;
+  font-family: 'Inter', sans-serif;
+  transition: border-color 0.2s;
+}
+
+.schedule-input:focus {
+  border-color: var(--border-strong);
+  outline: none;
+}
+
+.schedule-current {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 10px 12px;
+  background: var(--surface-hover);
+  border-radius: 8px;
+  font-size: 12px;
+  color: var(--text-muted);
+}
+
+.btn-clear-schedule {
+  background: transparent;
+  color: var(--danger);
+  border: 1px solid var(--danger-border);
+  border-radius: 6px;
+  padding: 4px 10px;
+  font-size: 11px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+  font-family: 'Inter', sans-serif;
+}
+
+.btn-clear-schedule:hover {
+  background: var(--danger-bg);
+}
+
 /* ── Add category block ── */
 .section-block { padding: 16px 18px; display: flex; flex-direction: column; gap: 10px; }
 .block-title { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.1em; color: var(--text-muted); }

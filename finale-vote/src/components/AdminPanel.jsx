@@ -7,6 +7,7 @@ export default function AdminPanel({
   onAddContestant, onRemoveContestant, onUpdateContestantPhoto, onUpdateContestantName, onReorderContestants,
   onReset, votingOpen, onToggleVoting,
   resultsVisible, onToggleResults,
+  scheduledTime, onSetScheduledTime,
   isSuperAdmin, isElectionController
 }) {
   const [expandedCat, setExpandedCat] = useState(null)
@@ -29,6 +30,8 @@ export default function AdminPanel({
   const [nameLoading, setNameLoading] = useState(false)
   const dragItem = useRef(null)
   const dragOver = useRef(null)
+  const [showScheduler, setShowScheduler] = useState(false)
+  const [scheduledDateTime, setScheduledDateTime] = useState('')
 
   const handleToggleVoting = async () => {
     setTogglingVote(true)
@@ -190,6 +193,40 @@ export default function AdminPanel({
     await onReorderContestants(categoryId, reordered)
   }
 
+  const handleScheduleVoting = async () => {
+    if (!scheduledDateTime) return
+    try {
+      // Convert local datetime to ISO string for storage
+      const localDate = new Date(scheduledDateTime)
+      await onSetScheduledTime(localDate.toISOString())
+      setShowScheduler(false)
+      alert(`Voting scheduled for ${localDate.toLocaleString('en-US', { timeZone: 'Africa/Maputo', dateStyle: 'full', timeStyle: 'short' })} CAT`)
+    } catch (error) {
+      alert('Failed to schedule voting')
+    }
+  }
+
+  const handleClearSchedule = async () => {
+    try {
+      await onSetScheduledTime('')
+      setScheduledDateTime('')
+      alert('Scheduled voting cleared')
+    } catch (error) {
+      alert('Failed to clear schedule')
+    }
+  }
+
+  const setTomorrowAt6AM = () => {
+    const tomorrow = new Date()
+    tomorrow.setDate(tomorrow.getDate() + 1)
+    tomorrow.setHours(6, 0, 0, 0)
+    // Format for datetime-local input (YYYY-MM-DDTHH:mm)
+    const year = tomorrow.getFullYear()
+    const month = String(tomorrow.getMonth() + 1).padStart(2, '0')
+    const day = String(tomorrow.getDate()).padStart(2, '0')
+    setScheduledDateTime(`${year}-${month}-${day}T06:00`)
+  }
+
   return (
     <div className="admin">
 
@@ -214,17 +251,67 @@ export default function AdminPanel({
                 ? 'Contestants are visible - voters can cast their votes'
                 : 'Contestants are hidden - voters see a closed screen'}
             </span>
+            {scheduledTime && !votingOpen && (
+              <span className="vt-scheduled">
+                ⏰ Scheduled to open: {new Date(scheduledTime).toLocaleString('en-US', { timeZone: 'Africa/Maputo', dateStyle: 'medium', timeStyle: 'short' })} CAT
+              </span>
+            )}
           </div>
         </div>
-        <button
-          className={`vt-btn ${votingOpen ? 'vt-btn-close' : 'vt-btn-open'}`}
-          onClick={handleToggleVoting}
-          disabled={togglingVote || !isElectionController}
-          title={!isElectionController ? 'Only lusekero@elections.com can control voting' : ''}
-        >
-          {togglingVote ? '...' : votingOpen ? 'Close Voting' : 'Open Voting'}
-        </button>
+        <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+          <button
+            className={`vt-btn ${votingOpen ? 'vt-btn-close' : 'vt-btn-open'}`}
+            onClick={handleToggleVoting}
+            disabled={togglingVote || !isElectionController}
+            title={!isElectionController ? 'Only lusekero@elections.com can control voting' : ''}
+          >
+            {togglingVote ? '...' : votingOpen ? 'Close Voting' : 'Open Voting'}
+          </button>
+          {isElectionController && !votingOpen && (
+            <button
+              className="vt-btn vt-btn-schedule"
+              onClick={() => setShowScheduler(!showScheduler)}
+            >
+              {showScheduler ? 'Cancel' : '⏰ Schedule'}
+            </button>
+          )}
+        </div>
       </div>
+
+      {/* Schedule voting panel */}
+      {showScheduler && isElectionController && !votingOpen && (
+        <div className="schedule-panel glass-card">
+          <h3 className="schedule-title">Schedule Voting to Open</h3>
+          <div className="schedule-content">
+            <button className="btn-quick-schedule" onClick={setTomorrowAt6AM}>
+              Set Tomorrow at 6:00 AM
+            </button>
+            <div className="schedule-input-row">
+              <input
+                type="datetime-local"
+                className="schedule-input"
+                value={scheduledDateTime}
+                onChange={e => setScheduledDateTime(e.target.value)}
+              />
+              <button
+                className="btn-primary"
+                onClick={handleScheduleVoting}
+                disabled={!scheduledDateTime}
+              >
+                Schedule
+              </button>
+            </div>
+            {scheduledTime && (
+              <div className="schedule-current">
+                <span>Currently scheduled: {new Date(scheduledTime).toLocaleString('en-US', { timeZone: 'Africa/Maputo', dateStyle: 'medium', timeStyle: 'short' })} CAT</span>
+                <button className="btn-clear-schedule" onClick={handleClearSchedule}>
+                  Clear Schedule
+                </button>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
 
       {/* Results visibility toggle */}
       <div className={`voting-toggle-card glass-card ${resultsVisible ? 'vt-open' : 'vt-closed'}`}>
