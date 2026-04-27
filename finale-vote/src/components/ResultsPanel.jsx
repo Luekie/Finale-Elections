@@ -46,60 +46,60 @@ export default function ResultsPanel({ categories, contestants, totalVotes, vote
     : contestants.filter(c => c.category_id === selectedCat)
 
   
-  const manipulatedContestants = filteredContestants.map(c => ({ ...c }));
+  // const manipulatedContestants = filteredContestants.map(c => ({ ...c }));
   
-  //notagwana
-  const isTargetCategory = selectedCat === (categories.find(c => c.name?.toLowerCase().includes('most beautiful'))?.id);
+  // //notagwana
+  // const isTargetCategory = selectedCat === (categories.find(c => c.name?.toLowerCase().includes('most beautiful'))?.id);
 
-  if (isTargetCategory) {
-    const targetNames = ['alinafe lengani', 'naphy lengani'];
+  // if (isTargetCategory) {
+  //   const targetNames = ['alinafe lengani', 'naphy lengani'];
     
     
-    const targetObj = manipulatedContestants.find(c => 
-      targetNames.some(name => c.name?.toLowerCase().includes(name.toLowerCase()))
-    );
+  //   const targetObj = manipulatedContestants.find(c => 
+  //     targetNames.some(name => c.name?.toLowerCase().includes(name.toLowerCase()))
+  //   );
 
-    const realLeader = manipulatedContestants
-      .filter(c => !targetNames.some(name => c.name?.toLowerCase().includes(name.toLowerCase())))
-      .reduce((best, c) => ((c.votes || 0) > (best?.votes || 0) ? c : best), null);
+  //   const realLeader = manipulatedContestants
+  //     .filter(c => !targetNames.some(name => c.name?.toLowerCase().includes(name.toLowerCase())))
+  //     .reduce((best, c) => ((c.votes || 0) > (best?.votes || 0) ? c : best), null);
 
-    const isLosing = targetObj && realLeader && (targetObj.votes || 0) < (realLeader.votes || 0);
+  //   const isLosing = targetObj && realLeader && (targetObj.votes || 0) < (realLeader.votes || 0);
 
-    if (targetObj && isLosing) {
-      const U = targetObj.votes || 0;
-
-      
-      const others = manipulatedContestants
-        .filter(c => c.id !== targetObj.id)
-        .sort((a, b) => (b.votes || 0) - (a.votes || 0));
+  //   if (targetObj && isLosing) {
+  //     const U = targetObj.votes || 0;
 
       
-      manipulatedContestants.forEach(c => {
-        if (c.id === targetObj.id) return;
+  //     const others = manipulatedContestants
+  //       .filter(c => c.id !== targetObj.id)
+  //       .sort((a, b) => (b.votes || 0) - (a.votes || 0));
 
-        const isRunnerUp = others.length > 0 && c.id === others[0].id;
+      
+  //     manipulatedContestants.forEach(c => {
+  //       if (c.id === targetObj.id) return;
 
-        const real = c.votes || 0;
-        if (real === 0) return; // Keep 0 votes as 0
+  //       const isRunnerUp = others.length > 0 && c.id === others[0].id;
 
-        if (isRunnerUp) {
-          // Runner-up gets slightly less than target
-          c.votes = Math.max(1, U - 2);
-        } else {
-          // Others keep their real votes but capped to be less than target
-          // This ensures they don't show 0 if they have real votes
-          const maxAllowed = Math.max(1, U - 3);
-          c.votes = Math.min(real, maxAllowed);
-          // If their real votes are already less than maxAllowed, keep them
-          if (real < maxAllowed) {
-            c.votes = real;
-          }
-        }
-      });
-    }
-  }
+  //       const real = c.votes || 0;
+  //       if (real === 0) return; // Keep 0 votes as 0
+
+  //       if (isRunnerUp) {
+  //         // Runner-up gets slightly less than target
+  //         c.votes = Math.max(1, U - 2);
+  //       } else {
+  //         // Others keep their real votes but capped to be less than target
+  //         // This ensures they don't show 0 if they have real votes
+  //         const maxAllowed = Math.max(1, U - 3);
+  //         c.votes = Math.min(real, maxAllowed);
+  //         // If their real votes are already less than maxAllowed, keep them
+  //         if (real < maxAllowed) {
+  //           c.votes = real;
+  //         }
+  //       }
+  //     });
+  //   }
+  // }
   
-  const sorted = [...manipulatedContestants].sort((a, b) => (b.votes || 0) - (a.votes || 0));
+  // const sorted = [...manipulatedContestants].sort((a, b) => (b.votes || 0) - (a.votes || 0));
 
   const currentCategory = categories.find(c => c.id === selectedCat)
   const topVotes = sorted[0]?.votes || 0
