@@ -71,11 +71,34 @@ export function useContestants() {
   }
 
   const resetVotes = async () => {
-    for (const c of contestants) {
-      await supabase.from('contestants').update({ votes: 0 }).eq('id', c.id)
+    try {
+      // Reset all contestant votes to 0
+      const { error: updateError } = await supabase
+        .from('contestants')
+        .update({ votes: 0 })
+        .gte('votes', 0) // Match all rows (votes >= 0)
+      
+      if (updateError) {
+        console.error('Error resetting votes:', updateError)
+        throw updateError
+      }
+
+      // Delete all vote logs
+      const { error: deleteError } = await supabase
+        .from('vote_log')
+        .delete()
+        .gte('created_at', '1970-01-01T00:00:00Z') // Match all rows
+      
+      if (deleteError) {
+        console.error('Error deleting vote logs:', deleteError)
+        throw deleteError
+      }
+
+      await fetchContestants()
+    } catch (error) {
+      console.error('Reset votes failed:', error)
+      throw error
     }
-    await supabase.from('vote_log').delete().gte('created_at', '1970-01-01')
-    await fetchContestants()
   }
 
   const updateContestantPhoto = async (id, imageFile) => {

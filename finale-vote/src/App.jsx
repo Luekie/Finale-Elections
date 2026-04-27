@@ -25,6 +25,7 @@ function Inner() {
 
   const isAdmin = user?.isAdmin === true
   const isSuperAdmin = user?.role === 'super'
+  const isElectionController = user?.email?.toLowerCase() === 'lusekero@elections.com'
   const loading = catLoading || conLoading || statusLoading
   const totalVotes = contestants.reduce((a, c) => a + (c.votes || 0), 0)
 
@@ -164,6 +165,7 @@ function Inner() {
                     resultsVisible={resultsVisible}
                     onToggleResults={setResultsVisible}
                     isSuperAdmin={isSuperAdmin}
+                    isElectionController={isElectionController}
                   />
                 )}
                 {adminTab === 'analytics' && (

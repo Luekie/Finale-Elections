@@ -7,7 +7,7 @@ export default function AdminPanel({
   onAddContestant, onRemoveContestant, onUpdateContestantPhoto, onUpdateContestantName, onReorderContestants,
   onReset, votingOpen, onToggleVoting,
   resultsVisible, onToggleResults,
-  isSuperAdmin
+  isSuperAdmin, isElectionController
 }) {
   const [expandedCat, setExpandedCat] = useState(null)
   const [newCatName, setNewCatName] = useState('')
@@ -150,8 +150,15 @@ export default function AdminPanel({
   const handleReset = async () => {
     if (!confirm('Reset ALL votes across all categories? This cannot be undone.')) return
     setResetting(true)
-    try { await onReset() }
-    finally { setResetting(false) }
+    try { 
+      await onReset()
+      alert('All votes have been reset successfully!')
+    } catch (error) {
+      console.error('Reset failed:', error)
+      alert('Failed to reset votes. Please try again or check the console for errors.')
+    } finally { 
+      setResetting(false) 
+    }
   }
 
   const handleDragStart = (index) => { dragItem.current = index }
@@ -212,8 +219,8 @@ export default function AdminPanel({
         <button
           className={`vt-btn ${votingOpen ? 'vt-btn-close' : 'vt-btn-open'}`}
           onClick={handleToggleVoting}
-          disabled={togglingVote || !isSuperAdmin}
-          title={!isSuperAdmin ? 'Super admin access required' : ''}
+          disabled={togglingVote || !isElectionController}
+          title={!isElectionController ? 'Only lusekero@elections.com can control voting' : ''}
         >
           {togglingVote ? '...' : votingOpen ? 'Close Voting' : 'Open Voting'}
         </button>
@@ -235,8 +242,8 @@ export default function AdminPanel({
         <button
           className={`vt-btn ${resultsVisible ? 'vt-btn-close' : 'vt-btn-open'}`}
           onClick={handleToggleResults}
-          disabled={togglingResults || !isSuperAdmin}
-          title={!isSuperAdmin ? 'Super admin access required' : ''}
+          disabled={togglingResults || !isElectionController}
+          title={!isElectionController ? 'Only lusekero@elections.com can control results visibility' : ''}
         >
           {togglingResults ? '...' : resultsVisible ? 'Hide Results' : 'Reveal Results'}
         </button>
@@ -266,7 +273,7 @@ export default function AdminPanel({
       <div className="cat-list">
         <div className="list-header">
           <span className="list-count">{categories.length} categor{categories.length !== 1 ? 'ies' : 'y'}</span>
-          {isSuperAdmin && (
+          {isElectionController && (
             <button className="btn-ghost-danger" onClick={handleReset} disabled={resetting}>
               {resetting ? 'Resetting...' : 'Reset all votes'}
             </button>
