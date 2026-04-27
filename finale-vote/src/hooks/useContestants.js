@@ -9,6 +9,7 @@ export function useContestants() {
     const { data, error } = await supabase
       .from('contestants')
       .select('*')
+      .order('display_order', { ascending: true })
       .order('created_at', { ascending: true })
     if (!error) setContestants(data || [])
     setLoading(false)
@@ -104,5 +105,18 @@ export function useContestants() {
     await fetchContestants()
   }
 
-  return { contestants, loading, addContestant, removeContestant, resetVotes, updateContestantPhoto, updateContestantName }
+  const reorderContestants = async (categoryId, reorderedContestants) => {
+    // Update display_order for each contestant in the reordered list
+    const updates = reorderedContestants.map((contestant, index) => 
+      supabase
+        .from('contestants')
+        .update({ display_order: index })
+        .eq('id', contestant.id)
+    )
+    
+    await Promise.all(updates)
+    await fetchContestants()
+  }
+
+  return { contestants, loading, addContestant, removeContestant, resetVotes, updateContestantPhoto, updateContestantName, reorderContestants }
 }

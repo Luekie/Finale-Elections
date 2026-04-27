@@ -132,6 +132,46 @@
 }
 .btn-photo:hover { background: var(--surface-hover); border-color: var(--border-strong); }
 
+/* Reorder buttons */
+.con-reorder-btns {
+  display: flex;
+  gap: 2px;
+  flex-shrink: 0;
+}
+
+.btn-reorder {
+  background: transparent;
+  color: var(--text-muted);
+  font-size: 14px;
+  width: 24px;
+  height: 24px;
+  border-radius: 6px;
+  border: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.15s;
+  font-family: 'Inter', sans-serif;
+  padding: 0;
+  line-height: 1;
+}
+
+.btn-reorder:hover:not(:disabled) {
+  background: var(--surface-hover);
+  border-color: var(--border-strong);
+  color: var(--text);
+}
+
+.btn-reorder:disabled {
+  opacity: 0.25;
+  cursor: not-allowed;
+}
+
+.btn-reorder:active:not(:disabled) {
+  transform: scale(0.95);
+}
+
 /* ── Category body (animated) ── */
 .cat-body {
   border-top: 1px solid var(--border);

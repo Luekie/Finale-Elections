@@ -4,7 +4,7 @@ import './AdminPanel.css'
 export default function AdminPanel({
   categories, contestants,
   onAddCategory, onRemoveCategory, onReorderCategories,
-  onAddContestant, onRemoveContestant, onUpdateContestantPhoto, onUpdateContestantName,
+  onAddContestant, onRemoveContestant, onUpdateContestantPhoto, onUpdateContestantName, onReorderContestants,
   onReset, votingOpen, onToggleVoting,
   resultsVisible, onToggleResults,
   isSuperAdmin
@@ -165,6 +165,22 @@ export default function AdminPanel({
     reordered.splice(dragOver.current, 0, moved)
     dragItem.current = null; dragOver.current = null
     onReorderCategories(reordered)
+  }
+
+  const moveContestant = async (categoryId, contestantId, direction) => {
+    const catContestants = contestants.filter(c => c.category_id === categoryId)
+    const currentIndex = catContestants.findIndex(c => c.id === contestantId)
+    
+    if (currentIndex === -1) return
+    if (direction === 'up' && currentIndex === 0) return
+    if (direction === 'down' && currentIndex === catContestants.length - 1) return
+    
+    const newIndex = direction === 'up' ? currentIndex - 1 : currentIndex + 1
+    const reordered = [...catContestants]
+    const [moved] = reordered.splice(currentIndex, 1)
+    reordered.splice(newIndex, 0, moved)
+    
+    await onReorderContestants(categoryId, reordered)
   }
 
   return (
@@ -335,6 +351,22 @@ export default function AdminPanel({
                           <span className="con-votes">{c.votes || 0}v</span>
                           {isSuperAdmin && (
                             <>
+                              <div className="con-reorder-btns">
+                                <button
+                                  className="btn-reorder"
+                                  onClick={() => moveContestant(cat.id, c.id, 'up')}
+                                  disabled={i === 0}
+                                  title="Move up"
+                                  aria-label="Move up"
+                                >↑</button>
+                                <button
+                                  className="btn-reorder"
+                                  onClick={() => moveContestant(cat.id, c.id, 'down')}
+                                  disabled={i === catContestants.length - 1}
+                                  title="Move down"
+                                  aria-label="Move down"
+                                >↓</button>
+                              </div>
                               <input
                                 ref={el => { photoRefs.current[c.id] = el }}
                                 type="file" accept="image/*"

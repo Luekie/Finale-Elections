@@ -19,7 +19,7 @@ function Inner() {
 
   const { user, authLoading, signInAdmin, signOut, signIn, signUp } = useAuth()
   const { categories, loading: catLoading, addCategory, removeCategory, reorderCategories } = useCategories()
-  const { contestants, loading: conLoading, addContestant, removeContestant, resetVotes, updateContestantPhoto, updateContestantName } = useContestants()
+  const { contestants, loading: conLoading, addContestant, removeContestant, resetVotes, updateContestantPhoto, updateContestantName, reorderContestants } = useContestants()
   const { votes, voteLog, saveVote, saveAllVotes, deleteVote, hasVotedInCategory, votedForInCategory } = useVoting(user?.email)
   const { votingOpen, resultsVisible, statusLoading, setVotingOpen, setResultsVisible } = useVotingStatus()
 
@@ -157,6 +157,7 @@ function Inner() {
                     onRemoveContestant={removeContestant}
                     onUpdateContestantPhoto={updateContestantPhoto}
                     onUpdateContestantName={updateContestantName}
+                    onReorderContestants={reorderContestants}
                     onReset={resetVotes}
                     votingOpen={votingOpen}
                     onToggleVoting={setVotingOpen}
