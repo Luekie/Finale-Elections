@@ -109,3 +109,33 @@
 }
 .vl-delete:hover:not(:disabled) { color: var(--danger); border-color: var(--danger); background: var(--danger-bg); }
 .vl-delete:disabled { opacity: 0.4; cursor: not-allowed; }
+
+.a-title-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 4px;
+  flex-wrap: wrap;
+}
+
+.line-cat-select {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 6px 10px;
+  font-size: 12px;
+  font-family: 'Inter', sans-serif;
+  color: var(--text);
+  cursor: pointer;
+  max-width: 220px;
+}
+
+.line-cat-select:focus { outline: none; border-color: var(--border-strong); }
+
+.a-empty {
+  font-size: 13px;
+  color: var(--text-muted);
+  padding: 24px 0;
+  text-align: center;
+}

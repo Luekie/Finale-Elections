@@ -233,3 +233,20 @@
 }
 .drag-handle:active { cursor: grabbing; }
 .cat-card[draggable="true"]:hover { outline: 1px dashed var(--border); }
+
+/* Inline name editing */
+.con-name-edit {
+  flex: 1;
+  background: var(--surface);
+  border: 1px solid var(--border-strong);
+  border-radius: 6px;
+  padding: 4px 8px;
+  font-size: 13px;
+  font-family: 'Inter', sans-serif;
+  color: var(--text);
+  outline: none;
+}
+
+.con-name-edit:focus {
+  border-color: var(--text);
+}

@@ -4,7 +4,7 @@ import './AdminPanel.css'
 export default function AdminPanel({
   categories, contestants,
   onAddCategory, onRemoveCategory, onReorderCategories,
-  onAddContestant, onRemoveContestant, onUpdateContestantPhoto,
+  onAddContestant, onRemoveContestant, onUpdateContestantPhoto, onUpdateContestantName,
   onReset, votingOpen, onToggleVoting,
   resultsVisible, onToggleResults,
   isSuperAdmin
@@ -24,6 +24,9 @@ export default function AdminPanel({
   const [resetting, setResetting] = useState(false)
   const [photoLoading, setPhotoLoading] = useState({})
   const photoRefs = useRef({})
+  const [editingName, setEditingName] = useState(null)
+  const [editNameValue, setEditNameValue] = useState('')
+  const [nameLoading, setNameLoading] = useState(false)
   const dragItem = useRef(null)
   const dragOver = useRef(null)
 
@@ -114,6 +117,33 @@ export default function AdminPanel({
     finally {
       setPhotoLoading(p => ({ ...p, [contestantId]: false }))
       if (photoRefs.current[contestantId]) photoRefs.current[contestantId].value = ''
+    }
+  }
+
+  const startEditName = (contestant) => {
+    setEditingName(contestant.id)
+    setEditNameValue(contestant.name)
+  }
+
+  const cancelEditName = () => {
+    setEditingName(null)
+    setEditNameValue('')
+  }
+
+  const saveEditName = async (id) => {
+    const trimmed = editNameValue.trim()
+    if (!trimmed || trimmed === contestants.find(c => c.id === id)?.name) {
+      cancelEditName()
+      return
+    }
+    setNameLoading(true)
+    try {
+      await onUpdateContestantName(id, trimmed)
+      cancelEditName()
+    } catch {
+      /* silent */
+    } finally {
+      setNameLoading(false)
     }
   }
 
@@ -278,7 +308,30 @@ export default function AdminPanel({
                             : <div className="con-avatar">{c.name.charAt(0).toUpperCase()}</div>
                           }
                           <span className="con-num">{String(i + 1).padStart(2, '0')}</span>
-                          <span className="con-name">{c.name}</span>
+                          {editingName === c.id ? (
+                            <input
+                              className="con-name-edit"
+                              value={editNameValue}
+                              onChange={e => setEditNameValue(e.target.value)}
+                              onKeyDown={e => {
+                                if (e.key === 'Enter') saveEditName(c.id)
+                                if (e.key === 'Escape') cancelEditName()
+                              }}
+                              onBlur={() => saveEditName(c.id)}
+                              disabled={nameLoading}
+                              autoFocus
+                              maxLength={40}
+                            />
+                          ) : (
+                            <span
+                              className="con-name"
+                              onClick={() => isSuperAdmin && startEditName(c)}
+                              style={{ cursor: isSuperAdmin ? 'pointer' : 'default' }}
+                              title={isSuperAdmin ? 'Click to edit' : ''}
+                            >
+                              {c.name}
+                            </span>
+                          )}
                           <span className="con-votes">{c.votes || 0}v</span>
                           {isSuperAdmin && (
                             <>

@@ -22,6 +22,9 @@ export function useContestants() {
       .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'contestants' }, fetchContestants)
       .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'contestants' }, fetchContestants)
       .on('postgres_changes', { event: 'DELETE', schema: 'public', table: 'contestants' }, fetchContestants)
+      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'vote_log' }, fetchContestants)
+      .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'vote_log' }, fetchContestants)
+      .on('postgres_changes', { event: 'DELETE', schema: 'public', table: 'vote_log' }, fetchContestants)
       .subscribe()
 
     return () => { supabase.removeChannel(ch) }
@@ -92,5 +95,14 @@ export function useContestants() {
     await fetchContestants()
   }
 
-  return { contestants, loading, addContestant, removeContestant, resetVotes, updateContestantPhoto }
+  const updateContestantName = async (id, newName) => {
+    const { error } = await supabase
+      .from('contestants')
+      .update({ name: newName.trim() })
+      .eq('id', id)
+    if (error) throw error
+    await fetchContestants()
+  }
+
+  return { contestants, loading, addContestant, removeContestant, resetVotes, updateContestantPhoto, updateContestantName }
 }

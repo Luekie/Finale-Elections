@@ -237,34 +237,38 @@ export default function ResultsPanel({ categories, contestants, totalVotes, vote
           <span className="stat-label">Nominees</span>
           <span className="stat-value">{filteredContestants.length}</span>
         </button>
-        <button
-          className="stat-card glass-card stat-card-btn"
-          onClick={() => {
-            const leaderCat = sorted[0]?.category_id
-            if (leaderCat) setSelectedCat(leaderCat)
-          }}
-          title={sorted[0] ? `View ${sorted[0].name}'s category` : ''}
-        >
-          <span className="stat-label">Leader</span>
-          <span className="stat-value stat-name">{sorted[0]?.name || '—'}</span>
-        </button>
-        <button
-          className="stat-card glass-card stat-card-btn"
-          onClick={() => {
-            const leaderCat = sorted[0]?.category_id
-            if (leaderCat) setSelectedCat(leaderCat)
-          }}
-          title="View leading category"
-        >
-          <span className="stat-label">Lead %</span>
-          <span className="stat-value">
-            {displayTotal > 0 ? Math.round(((sorted[0]?.votes || 0) / displayTotal) * 100) : 0}%
-          </span>
-        </button>
+        {selectedCat !== 'all' && sorted[0] && (
+          <>
+            <button
+              className="stat-card glass-card stat-card-btn"
+              onClick={() => {
+                const leaderCat = sorted[0]?.category_id
+                if (leaderCat) setSelectedCat(leaderCat)
+              }}
+              title={sorted[0] ? `View ${sorted[0].name}'s category` : ''}
+            >
+              <span className="stat-label">Leader</span>
+              <span className="stat-value stat-name">{sorted[0]?.name || '—'}</span>
+            </button>
+            <button
+              className="stat-card glass-card stat-card-btn"
+              onClick={() => {
+                const leaderCat = sorted[0]?.category_id
+                if (leaderCat) setSelectedCat(leaderCat)
+              }}
+              title="View leading category"
+            >
+              <span className="stat-label">Lead %</span>
+              <span className="stat-value">
+                {displayTotal > 0 ? Math.round(((sorted[0]?.votes || 0) / displayTotal) * 100) : 0}%
+              </span>
+            </button>
+          </>
+        )}
       </div>
 
-      {/* Winner spotlight */}
-      {displayTotal > 0 && sorted[0] && (sorted[0].votes || 0) > 0 && (
+      {/* Winner spotlight — only shown when a specific category is selected */}
+      {selectedCat !== 'all' && displayTotal > 0 && sorted[0] && (sorted[0].votes || 0) > 0 && (
         <div className="winner-card glass-card">
           {sorted[0].image_url && (
             <img src={sorted[0].image_url} alt={sorted[0].name} className="winner-photo" />
@@ -292,6 +296,48 @@ export default function ResultsPanel({ categories, contestants, totalVotes, vote
             <span className="empty-icon">◎</span>
             <p>No nominees in this category yet.</p>
           </div>
+        ) : selectedCat === 'all' ? (
+          // Group by category
+          categories.map(cat => {
+            const catContestants = [...contestants]
+              .filter(c => c.category_id === cat.id)
+              .sort((a, b) => (b.votes || 0) - (a.votes || 0))
+            if (catContestants.length === 0) return null
+            const catTop = catContestants[0]?.votes || 0
+            const catTotal = catContestants.reduce((s, c) => s + (c.votes || 0), 0)
+            return (
+              <div key={cat.id} className="cat-group">
+                <div className="cat-group-header" onClick={() => setSelectedCat(cat.id)}>
+                  <span className="cat-group-name">{cat.name}</span>
+                  <span className="cat-group-meta">{catTotal} vote{catTotal !== 1 ? 's' : ''}</span>
+                </div>
+                <div className="results-list">
+                  {catContestants.map((c, i) => {
+                    const count = c.votes || 0
+                    const pct = catTotal > 0 ? Math.round((count / catTotal) * 100) : 0
+                    return (
+                      <div key={c.id} className={`result-row glass-card ${i === 0 && count > 0 ? 'leading' : ''}`}>
+                        <div className="result-meta">
+                          <div className="result-left">
+                            {c.image_url && <img src={c.image_url} alt={c.name} className="result-thumb" />}
+                            <span className="result-rank">#{i + 1}</span>
+                            <span className="result-name">{c.name}</span>
+                          </div>
+                          <div className="result-right">
+                            <span className="result-pct">{pct}%</span>
+                            <span className="result-count">{count} vote{count !== 1 ? 's' : ''}</span>
+                          </div>
+                        </div>
+                        <div className="bar-track">
+                          <div className="bar-fill" style={{ width: catTop > 0 ? `${(count / catTop) * 100}%` : '0%' }} />
+                        </div>
+                      </div>
+                    )
+                  })}
+                </div>
+              </div>
+            )
+          })
         ) : (
           <div className="results-list">
             {sorted.map((c, i) => {
@@ -304,11 +350,6 @@ export default function ResultsPanel({ categories, contestants, totalVotes, vote
                       {c.image_url && <img src={c.image_url} alt={c.name} className="result-thumb" />}
                       <span className="result-rank">#{i + 1}</span>
                       <span className="result-name">{c.name}</span>
-                      {selectedCat === 'all' && (
-                        <span className="result-cat-tag">
-                          {categories.find(cat => cat.id === c.category_id)?.name}
-                        </span>
-                      )}
                     </div>
                     <div className="result-right">
                       <span className="result-pct">{pct}%</span>
@@ -316,10 +357,7 @@ export default function ResultsPanel({ categories, contestants, totalVotes, vote
                     </div>
                   </div>
                   <div className="bar-track">
-                    <div
-                      className="bar-fill"
-                      style={{ width: topVotes > 0 ? `${(count / topVotes) * 100}%` : '0%' }}
-                    />
+                    <div className="bar-fill" style={{ width: topVotes > 0 ? `${(count / topVotes) * 100}%` : '0%' }} />
                   </div>
                 </div>
               )
@@ -328,8 +366,8 @@ export default function ResultsPanel({ categories, contestants, totalVotes, vote
         )}
       </div>
 
-      {/* Charts */}
-      {displayTotal > 0 && sorted.length > 0 && (
+      {/* Charts — only shown when a specific category is selected */}
+      {selectedCat !== 'all' && displayTotal > 0 && sorted.length > 0 && (
         <div className="charts-row">
           <div className="chart-card glass-card">
             <h2 className="section-title">Vote Distribution</h2>

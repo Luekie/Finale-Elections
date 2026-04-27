@@ -1,6 +1,6 @@
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
-  PieChart, Pie, Cell, Legend, LineChart, Line
+  PieChart, Pie, Cell, Legend, LineChart, Line, AreaChart, Area
 } from 'recharts'
 import { useState } from 'react'
 import jsPDF from 'jspdf'
@@ -11,6 +11,7 @@ import '../components/ResultsPanel.css'
 
 const COLORS_DARK  = ['#fff','#ccc','#999','#666','#444','#333']
 const COLORS_LIGHT = ['#111','#444','#777','#aaa','#ccc','#ddd']
+const LINE_COLORS  = ['#6ee7b7','#93c5fd','#fca5a5','#fcd34d','#c4b5fd','#f9a8d4','#86efac','#67e8f9']
 
 function isDark() { return document.documentElement.getAttribute('data-theme') !== 'light' }
 
@@ -35,10 +36,31 @@ function buildTimeline(voteLog, contestants) {
   })
 }
 
+function buildActivityLine(voteLog) {
+  if (!voteLog.length) return []
+  const buckets = {}
+  voteLog.forEach(v => {
+    if (!v.created_at) return
+    const ts = Math.floor(new Date(v.created_at).getTime() / 1000)
+    const minute = Math.floor(ts / 60) * 60
+    buckets[minute] = (buckets[minute] || 0) + 1
+  })
+  let cumulative = 0
+  return Object.keys(buckets).sort().map(min => {
+    cumulative += buckets[min]
+    return {
+      time: new Date(parseInt(min) * 1000).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+      votes: buckets[min],
+      total: cumulative,
+    }
+  })
+}
+
 export default function AdminAnalytics({ categories, contestants, totalVotes, voteLog, isAdmin, isSuperAdmin, onDeleteVote }) {
   const [deletingId, setDeletingId] = useState(null)
   const [filterEmail, setFilterEmail] = useState('')
   const [filterCat, setFilterCat] = useState('all')
+  const [lineCat, setLineCat] = useState('')
   const dark = isDark()
   const colors = dark ? COLORS_DARK : COLORS_LIGHT
   const muted = dark ? 'rgba(255,255,255,0.3)' : 'rgba(0,0,0,0.3)'
@@ -51,7 +73,14 @@ export default function AdminAnalytics({ categories, contestants, totalVotes, vo
 
   const sorted = [...contestants].sort((a, b) => (b.votes || 0) - (a.votes || 0))
   const topVotes = sorted[0]?.votes || 0
-  const timeline = buildTimeline(voteLog, contestants)
+
+  // Line chart: per-category race
+  const selectedLineCat = lineCat || categories[0]?.id || ''
+  const lineCatContestants = contestants.filter(c => c.category_id === selectedLineCat)
+  const timeline = buildTimeline(voteLog, lineCatContestants)
+
+  // Activity line (votes over time + cumulative)
+  const activityLine = buildActivityLine(voteLog)
 
   const exportPDF = () => {
     const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' })
@@ -231,6 +260,67 @@ export default function AdminAnalytics({ categories, contestants, totalVotes, vo
 
       {totalVotes > 0 && (
         <>
+          {/* Votes over time — area + line */}
+          {activityLine.length > 1 && (
+            <div className="chart-card glass-card">
+              <h2 className="a-title">Votes Over Time</h2>
+              <ResponsiveContainer width="100%" height={220}>
+                <AreaChart data={activityLine} margin={{ top: 8, right: 16, left: -20, bottom: 0 }}>
+                  <defs>
+                    <linearGradient id="areaGrad" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="5%" stopColor={LINE_COLORS[0]} stopOpacity={0.25} />
+                      <stop offset="95%" stopColor={LINE_COLORS[0]} stopOpacity={0} />
+                    </linearGradient>
+                  </defs>
+                  <CartesianGrid strokeDasharray="3 3" stroke={grid} />
+                  <XAxis dataKey="time" tick={{ fill: muted, fontSize: 11 }} axisLine={false} tickLine={false} />
+                  <YAxis tick={{ fill: muted, fontSize: 11 }} axisLine={false} tickLine={false} allowDecimals={false} />
+                  <Tooltip contentStyle={ttStyle} />
+                  <Area type="monotone" dataKey="total" stroke={LINE_COLORS[0]} strokeWidth={2}
+                    fill="url(#areaGrad)" name="Cumulative votes" dot={false} activeDot={{ r: 4 }} />
+                  <Line type="monotone" dataKey="votes" stroke={LINE_COLORS[1]} strokeWidth={2}
+                    name="Votes per minute" dot={false} activeDot={{ r: 4 }} />
+                </AreaChart>
+              </ResponsiveContainer>
+            </div>
+          )}
+
+          {/* Category race line chart */}
+          {categories.length > 0 && (
+            <div className="chart-card glass-card">
+              <div className="a-title-row">
+                <h2 className="a-title">Category Race</h2>
+                <select
+                  className="line-cat-select"
+                  value={selectedLineCat}
+                  onChange={e => setLineCat(e.target.value)}
+                >
+                  {categories.map(c => (
+                    <option key={c.id} value={c.id}>{c.name}</option>
+                  ))}
+                </select>
+              </div>
+              {timeline.length > 1 ? (
+                <ResponsiveContainer width="100%" height={260}>
+                  <LineChart data={timeline} margin={{ top: 8, right: 16, left: -20, bottom: 0 }}>
+                    <CartesianGrid strokeDasharray="3 3" stroke={grid} />
+                    <XAxis dataKey="time" tick={{ fill: muted, fontSize: 11 }} axisLine={false} tickLine={false} />
+                    <YAxis tick={{ fill: muted, fontSize: 11 }} axisLine={false} tickLine={false} allowDecimals={false} />
+                    <Tooltip contentStyle={ttStyle} />
+                    <Legend iconType="circle" iconSize={8} formatter={v => <span style={{ color: muted, fontSize: 12 }}>{v}</span>} />
+                    {lineCatContestants.map((c, i) => (
+                      <Line key={c.id} type="monotone" dataKey={c.name}
+                        stroke={LINE_COLORS[i % LINE_COLORS.length]} strokeWidth={2}
+                        dot={false} activeDot={{ r: 4 }} />
+                    ))}
+                  </LineChart>
+                </ResponsiveContainer>
+              ) : (
+                <p className="a-empty">Not enough data points yet for this category.</p>
+              )}
+            </div>
+          )}
+
           {/* Bar + Pie */}
           <div className="chart-row">
             <div className="chart-card glass-card">
@@ -274,42 +364,6 @@ export default function AdminAnalytics({ categories, contestants, totalVotes, vo
               </div>
             )}
           </div>
-
-          {/* Activity over time */}
-          {activityData.length > 1 && (
-            <div className="chart-card glass-card">
-              <h2 className="a-title">Voting Activity</h2>
-              <ResponsiveContainer width="100%" height={200}>
-                <BarChart data={activityData} margin={{ top: 8, right: 8, left: -20, bottom: 0 }}>
-                  <CartesianGrid strokeDasharray="3 3" stroke={grid} />
-                  <XAxis dataKey="time" tick={{ fill: muted, fontSize: 11 }} axisLine={false} tickLine={false} />
-                  <YAxis tick={{ fill: muted, fontSize: 11 }} axisLine={false} tickLine={false} allowDecimals={false} />
-                  <Tooltip contentStyle={ttStyle} />
-                  <Bar dataKey="count" fill={colors[0]} radius={[4,4,0,0]} name="Votes" />
-                </BarChart>
-              </ResponsiveContainer>
-            </div>
-          )}
-
-          {/* Cumulative timeline */}
-          {timeline.length > 1 && (
-            <div className="chart-card glass-card">
-              <h2 className="a-title">Cumulative Timeline</h2>
-              <ResponsiveContainer width="100%" height={240}>
-                <LineChart data={timeline} margin={{ top: 8, right: 16, left: -20, bottom: 0 }}>
-                  <CartesianGrid strokeDasharray="3 3" stroke={grid} />
-                  <XAxis dataKey="time" tick={{ fill: muted, fontSize: 11 }} axisLine={false} tickLine={false} />
-                  <YAxis tick={{ fill: muted, fontSize: 11 }} axisLine={false} tickLine={false} allowDecimals={false} />
-                  <Tooltip contentStyle={ttStyle} />
-                  <Legend iconType="circle" iconSize={8} formatter={v => <span style={{ color: muted, fontSize: 12 }}>{v}</span>} />
-                  {contestants.map((c, i) => (
-                    <Line key={c.id} type="monotone" dataKey={c.name}
-                      stroke={colors[i % colors.length]} strokeWidth={2} dot={false} activeDot={{ r: 4 }} />
-                  ))}
-                </LineChart>
-              </ResponsiveContainer>
-            </div>
-          )}
         </>
       )}
 

@@ -293,3 +293,40 @@
 .chart-card {
   padding: 20px;
 }
+
+/* Category groups in all-categories view */
+.cat-group {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-bottom: 24px;
+}
+
+.cat-group-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 4px;
+  border-bottom: 1px solid var(--border);
+  cursor: pointer;
+  gap: 12px;
+}
+
+.cat-group-header:hover .cat-group-name {
+  color: var(--text);
+}
+
+.cat-group-name {
+  font-size: 13px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+  color: var(--text-muted);
+  transition: color 0.15s;
+}
+
+.cat-group-meta {
+  font-size: 11px;
+  color: var(--text-faint);
+  white-space: nowrap;
+}
