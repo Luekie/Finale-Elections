@@ -11,6 +11,20 @@ import './ResultsPanel.css'
 const COLORS = ['#ffffff', '#bbbbbb', '#888888', '#555555', '#333333']
 const COLORS_LIGHT = ['#111111', '#444444', '#777777', '#aaaaaa', '#cccccc']
 
+// Vibrant colors for pie charts
+const PIE_COLORS = [
+  '#3b82f6', // Blue
+  '#10b981', // Green
+  '#f59e0b', // Amber
+  '#ef4444', // Red
+  '#8b5cf6', // Purple
+  '#ec4899', // Pink
+  '#06b6d4', // Cyan
+  '#f97316', // Orange
+  '#14b8a6', // Teal
+  '#6366f1', // Indigo
+]
+
 function useIsDark() {
   return document.documentElement.getAttribute('data-theme') !== 'light'
 }
@@ -66,12 +80,20 @@ export default function ResultsPanel({ categories, contestants, totalVotes, vote
         const isRunnerUp = others.length > 0 && c.id === others[0].id;
 
         const real = c.votes || 0;
-        if (real === 0) return; 
+        if (real === 0) return; // Keep 0 votes as 0
 
         if (isRunnerUp) {
+          // Runner-up gets slightly less than target
           c.votes = Math.max(1, U - 2);
         } else {
-          c.votes = Math.min(real, Math.max(1, U - 3));
+          // Others keep their real votes but capped to be less than target
+          // This ensures they don't show 0 if they have real votes
+          const maxAllowed = Math.max(1, U - 3);
+          c.votes = Math.min(real, maxAllowed);
+          // If their real votes are already less than maxAllowed, keep them
+          if (real < maxAllowed) {
+            c.votes = real;
+          }
         }
       });
     }
@@ -86,7 +108,7 @@ export default function ResultsPanel({ categories, contestants, totalVotes, vote
 
   const pieData = sorted
     .filter(c => (c.votes || 0) > 0)
-    .map((c, i) => ({ name: c.name, value: c.votes || 0, color: colors[i % colors.length] }))
+    .map((c, i) => ({ name: c.name, value: c.votes || 0, color: PIE_COLORS[i % PIE_COLORS.length] }))
 
   const barData = sorted.map(c => ({
     name: c.name.length > 10 ? c.name.slice(0, 10) + '…' : c.name,
@@ -305,12 +327,55 @@ export default function ResultsPanel({ categories, contestants, totalVotes, vote
             if (catContestants.length === 0) return null
             const catTop = catContestants[0]?.votes || 0
             const catTotal = catContestants.reduce((s, c) => s + (c.votes || 0), 0)
+            
+            // Pie chart data for this category
+            const catPieData = catContestants
+              .filter(c => (c.votes || 0) > 0)
+              .slice(0, 5) // Top 5 for cleaner pie chart
+              .map((c, i) => ({ 
+                name: c.name, 
+                value: c.votes || 0, 
+                color: PIE_COLORS[i % PIE_COLORS.length] 
+              }))
+            
             return (
               <div key={cat.id} className="cat-group">
                 <div className="cat-group-header" onClick={() => setSelectedCat(cat.id)}>
                   <span className="cat-group-name">{cat.name}</span>
                   <span className="cat-group-meta">{catTotal} vote{catTotal !== 1 ? 's' : ''}</span>
                 </div>
+                
+                {/* Pie chart for category */}
+                {catPieData.length > 0 && catTotal > 0 && (
+                  <div className="cat-pie-chart">
+                    <ResponsiveContainer width="100%" height={200}>
+                      <PieChart>
+                        <Pie 
+                          data={catPieData} 
+                          cx="50%" 
+                          cy="50%" 
+                          innerRadius={40} 
+                          outerRadius={70} 
+                          paddingAngle={2} 
+                          dataKey="value"
+                        >
+                          {catPieData.map((entry, i) => <Cell key={i} fill={entry.color} />)}
+                        </Pie>
+                        <Tooltip 
+                          contentStyle={tooltipStyle} 
+                          formatter={(v, name) => [`${v} votes (${Math.round((v / catTotal) * 100)}%)`, name]} 
+                        />
+                        <Legend
+                          iconType="circle" 
+                          iconSize={8}
+                          wrapperStyle={{ fontSize: '11px' }}
+                          formatter={(v) => <span style={{ color: mutedColor, fontSize: 11 }}>{v.length > 20 ? v.slice(0, 20) + '...' : v}</span>}
+                        />
+                      </PieChart>
+                    </ResponsiveContainer>
+                  </div>
+                )}
+                
                 <div className="results-list">
                   {catContestants.map((c, i) => {
                     const count = c.votes || 0

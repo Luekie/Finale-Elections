@@ -121,7 +121,7 @@ function Inner() {
               />
             )}
             {effectiveView === 'results' && (
-              resultsVisible || isAdmin ? (
+              (resultsVisible || isAdmin) ? (
                 <ResultsPanel
                   categories={categories}
                   contestants={contestants}

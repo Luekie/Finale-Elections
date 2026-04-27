@@ -330,3 +330,18 @@
   color: var(--text-faint);
   white-space: nowrap;
 }
+
+/* Category pie chart */
+.cat-pie-chart {
+  margin: 12px 0;
+  padding: 16px;
+  background: var(--surface);
+  border-radius: 10px;
+  border: 1px solid var(--border);
+}
+
+@media (max-width: 600px) {
+  .cat-pie-chart {
+    padding: 12px;
+  }
+}
