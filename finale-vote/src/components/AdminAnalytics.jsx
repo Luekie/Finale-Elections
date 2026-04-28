@@ -397,9 +397,12 @@ export default function AdminAnalytics({ categories, contestants, totalVotes, vo
           <div className="vl-list">
             {voteLog
               .filter(v => {
-                const contestant = contestants.find(c => c.id === v.contestant_id)
                 const emailMatch = !filterEmail || v.voter_email?.toLowerCase().includes(filterEmail.toLowerCase())
-                const nameMatch = !filterEmail || contestant?.name?.toLowerCase().includes(filterEmail.toLowerCase())
+                // Match against ALL contestants with that name (handles duplicates across categories)
+                const matchingIds = filterEmail
+                  ? new Set(contestants.filter(c => c.name?.toLowerCase().includes(filterEmail.toLowerCase())).map(c => c.id))
+                  : null
+                const nameMatch = !filterEmail || matchingIds.has(v.contestant_id)
                 const catMatch = filterCat === 'all' || v.category_id === filterCat
                 return (emailMatch || nameMatch) && catMatch
               })
