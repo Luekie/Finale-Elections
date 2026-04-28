@@ -159,7 +159,7 @@ export function useAuth() {
       if (existing) {
         return {
           success: false,
-          error: 'Don not be a FRAUD You !, try again and we hack your phone'
+          error: 'Don not be a FRAUD You !, try again and we hack your device !'
         }
       }
     } catch { /* fingerprint check failed — allow signup to proceed */ }
