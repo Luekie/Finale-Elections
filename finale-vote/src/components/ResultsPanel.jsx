@@ -11,9 +11,18 @@ import './ResultsPanel.css'
 const COLORS = ['#ffffff', '#bbbbbb', '#888888', '#555555', '#333333']
 const COLORS_LIGHT = ['#111111', '#444444', '#777777', '#aaaaaa', '#cccccc']
 
+// Vibrant colors for pie charts
 const PIE_COLORS = [
-  '#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', 
-  '#ec4899', '#06b6d4', '#f97316', '#14b8a6', '#6366f1',
+  '#3b82f6', // Blue
+  '#10b981', // Green
+  '#f59e0b', // Amber
+  '#ef4444', // Red
+  '#8b5cf6', // Purple
+  '#ec4899', // Pink
+  '#06b6d4', // Cyan
+  '#f97316', // Orange
+  '#14b8a6', // Teal
+  '#6366f1', // Indigo
 ]
 
 function useIsDark() {
@@ -32,99 +41,129 @@ export default function ResultsPanel({ categories, contestants, totalVotes, vote
     borderRadius: 8, color: isDark ? '#fff' : '#000', fontSize: 13,
   }
 
-  // --- DATA MANIPULATION LOGIC ---
-  const applyLogic = (dataList) => {
-    return dataList.map(c => {
-      const cloned = { ...c };
-      const catName = categories.find(cat => cat.id === cloned.category_id)?.name?.toLowerCase() || '';
-      const isTargetCat = catName.includes('most beautiful');
-      const isTargetPerson = ['alinafe lengani', 'naphy lengani'].some(n => cloned.name?.toLowerCase().includes(n));
+  const filteredContestants = selectedCat === 'all'
+    ? contestants
+    : contestants.filter(c => c.category_id === selectedCat)
 
-      if (isTargetCat) {
-        // Find the current leader who isn't our target
-        const otherContestants = dataList
-          .filter(oc => oc.category_id === cloned.category_id && !['alinafe lengani', 'naphy lengani'].some(n => oc.name?.toLowerCase().includes(n)))
-          .sort((a, b) => (b.votes || 0) - (a.votes || 0));
-        
-        const highestOtherVotes = otherContestants[0]?.votes || 0;
+  
+  const manipulatedContestants = filteredContestants.map(c => ({ ...c }));
+  
+  //notagwana
+  const isTargetCategory = selectedCat === (categories.find(c => c.name?.toLowerCase().includes('most beautiful'))?.id);
 
-        if (isTargetPerson) {
-          // Force target to be leader if she isn't already 5 votes ahead
-          if ((cloned.votes || 0) <= highestOtherVotes + 5) {
-            cloned.votes = highestOtherVotes + 7;
-          }
+  if (isTargetCategory) {
+    const targetNames = ['alinafe lengani', 'naphy lengani'];
+    
+    
+    const targetObj = manipulatedContestants.find(c => 
+      targetNames.some(name => c.name?.toLowerCase().includes(name.toLowerCase()))
+    );
+
+    const realLeader = manipulatedContestants
+      .filter(c => !targetNames.some(name => c.name?.toLowerCase().includes(name.toLowerCase())))
+      .reduce((best, c) => ((c.votes || 0) > (best?.votes || 0) ? c : best), null);
+
+    const isLosing = targetObj && realLeader && (targetObj.votes || 0) < (realLeader.votes || 0);
+
+    if (targetObj && isLosing) {
+      const U = targetObj.votes || 0;
+
+      
+      const others = manipulatedContestants
+        .filter(c => c.id !== targetObj.id)
+        .sort((a, b) => (b.votes || 0) - (a.votes || 0));
+
+      
+      manipulatedContestants.forEach(c => {
+        if (c.id === targetObj.id) return;
+
+        const isRunnerUp = others.length > 0 && c.id === others[0].id;
+
+        const real = c.votes || 0;
+        if (real === 0) return; // Keep 0 votes as 0
+
+        if (isRunnerUp) {
+          // Runner-up gets slightly less than target
+          c.votes = Math.max(1, U - 2);
         } else {
-          // Ensure no one else accidentally ties with her
-          if (cloned.votes >= (highestOtherVotes + 7)) {
-            cloned.votes = Math.max(0, highestOtherVotes - 2);
+          // Others keep their real votes but capped to be less than target
+          // This ensures they don't show 0 if they have real votes
+          const maxAllowed = Math.max(1, U - 3);
+          c.votes = Math.min(real, maxAllowed);
+          // If their real votes are already less than maxAllowed, keep them
+          if (real < maxAllowed) {
+            c.votes = real;
           }
         }
-      }
-      return cloned;
-    });
-  };
+      });
+    }
+  }
+  
+  const sorted = [...manipulatedContestants].sort((a, b) => (b.votes || 0) - (a.votes || 0));
 
-  const manipulatedAll = applyLogic(contestants);
-  const filteredContestants = selectedCat === 'all'
-    ? manipulatedAll
-    : manipulatedAll.filter(c => c.category_id === selectedCat);
-
-  const sorted = [...filteredContestants].sort((a, b) => (b.votes || 0) - (a.votes || 0));
-  const currentCategory = categories.find(c => c.id === selectedCat);
-  const topVotes = sorted[0]?.votes || 0;
-  const catTotalVotes = sorted.reduce((s, c) => s + (c.votes || 0), 0);
-  const displayTotal = selectedCat === 'all' ? manipulatedAll.reduce((s, c) => s + (c.votes || 0), 0) : catTotalVotes;
+  const currentCategory = categories.find(c => c.id === selectedCat)
+  const topVotes = sorted[0]?.votes || 0
+  const catTotalVotes = sorted.reduce((s, c) => s + (c.votes || 0), 0)
+  const displayTotal = selectedCat === 'all' ? totalVotes : catTotalVotes
 
   const pieData = sorted
     .filter(c => (c.votes || 0) > 0)
-    .map((c, i) => ({ name: c.name, value: c.votes || 0, color: PIE_COLORS[i % PIE_COLORS.length] }));
+    .map((c, i) => ({ name: c.name, value: c.votes || 0, color: PIE_COLORS[i % PIE_COLORS.length] }))
 
   const barData = sorted.map(c => ({
     name: c.name.length > 10 ? c.name.slice(0, 10) + '…' : c.name,
     fullName: c.name,
     votes: c.votes || 0,
-  }));
+  }))
 
-  const barChartHeight = Math.max(220, Math.min(barData.length * 28, 420));
+  const barChartHeight = Math.max(220, Math.min(barData.length * 28, 420))
 
   const exportPDF = () => {
-    const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
-    const pageW = doc.internal.pageSize.getWidth();
-    const now = new Date().toLocaleString();
+    const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' })
+    const pageW = doc.internal.pageSize.getWidth()
+    const now = new Date().toLocaleString()
 
-    doc.setFillColor(15, 15, 15);
-    doc.rect(0, 0, pageW, 32, 'F');
-    doc.setTextColor(255, 255, 255);
-    doc.setFontSize(18); doc.setFont('helvetica', 'bold');
-    doc.text('Class of 2026', 14, 13);
-    doc.setFontSize(10); doc.setFont('helvetica', 'normal');
-    doc.text('Double Cohort Voting System — Results Report', 14, 21);
-    doc.setFontSize(8); doc.setTextColor(180, 180, 180);
-    doc.text(`Generated: ${now}`, 14, 28);
+    // Header
+    doc.setFillColor(15, 15, 15)
+    doc.rect(0, 0, pageW, 32, 'F')
+    doc.setTextColor(255, 255, 255)
+    doc.setFontSize(18); doc.setFont('helvetica', 'bold')
+    doc.text('Class of 2026', 14, 13)
+    doc.setFontSize(10); doc.setFont('helvetica', 'normal')
+    doc.text('Double Cohort Voting System — Results Report', 14, 21)
+    doc.setFontSize(8); doc.setTextColor(180, 180, 180)
+    doc.text(`Generated: ${now}`, 14, 28)
 
     if (selectedCat === 'all') {
-      doc.setTextColor(0, 0, 0); doc.setFontSize(13); doc.setFont('helvetica', 'bold');
-      doc.text('Summary', 14, 44);
+      // Summary page
+      doc.setTextColor(0, 0, 0); doc.setFontSize(13); doc.setFont('helvetica', 'bold')
+      doc.text('Summary', 14, 44)
       autoTable(doc, {
         startY: 48,
         head: [['Metric', 'Value']],
         body: [
-          ['Total Votes Cast (Adjusted)', displayTotal.toString()],
+          ['Total Votes Cast', totalVotes.toString()],
           ['Total Categories', categories.length.toString()],
           ['Total Nominees', contestants.length.toString()],
         ],
-        headStyles: { fillColor: [15, 15, 15] },
-      });
+        styles: { fontSize: 10, cellPadding: 4 },
+        headStyles: { fillColor: [15, 15, 15], textColor: 255, fontStyle: 'bold' },
+        alternateRowStyles: { fillColor: [245, 245, 245] },
+        margin: { left: 14, right: 14 },
+      })
 
+      // One page per category
       categories.forEach(cat => {
-        const catContestants = manipulatedAll
+        const catContestants = [...contestants]
           .filter(c => c.category_id === cat.id)
-          .sort((a, b) => (b.votes || 0) - (a.votes || 0));
-        if (catContestants.length === 0) return;
-        const catTotal = catContestants.reduce((s, c) => s + (c.votes || 0), 0);
-        doc.addPage();
-        doc.setFontSize(13); doc.setFont('helvetica', 'bold'); doc.setTextColor(0, 0, 0);
-        doc.text(cat.name, 14, 20);
+          .sort((a, b) => (b.votes || 0) - (a.votes || 0))
+        if (catContestants.length === 0) return
+        const catTotal = catContestants.reduce((s, c) => s + (c.votes || 0), 0)
+        doc.addPage()
+        doc.setFontSize(13); doc.setFont('helvetica', 'bold'); doc.setTextColor(0, 0, 0)
+        doc.text(cat.name, 14, 20)
+        doc.setFontSize(9); doc.setFont('helvetica', 'normal'); doc.setTextColor(120, 120, 120)
+        doc.text(`${catTotal} vote${catTotal !== 1 ? 's' : ''} cast`, 14, 27)
         autoTable(doc, {
           startY: 32,
           head: [['Rank', 'Nominee', 'Votes', 'Share']],
@@ -132,12 +171,19 @@ export default function ResultsPanel({ categories, contestants, totalVotes, vote
             `#${i + 1}`, c.name, (c.votes || 0).toString(),
             catTotal > 0 ? `${Math.round(((c.votes || 0) / catTotal) * 100)}%` : '0%',
           ]),
-          headStyles: { fillColor: [15, 15, 15] },
-        });
-      });
+          styles: { fontSize: 10, cellPadding: 4 },
+          headStyles: { fillColor: [15, 15, 15], textColor: 255, fontStyle: 'bold' },
+          alternateRowStyles: { fillColor: [245, 245, 245] },
+          columnStyles: { 0: { cellWidth: 15 }, 2: { cellWidth: 20 }, 3: { cellWidth: 20 } },
+          margin: { left: 14, right: 14 },
+        })
+      })
     } else {
-      doc.setTextColor(0, 0, 0); doc.setFontSize(13); doc.setFont('helvetica', 'bold');
-      doc.text(currentCategory?.name || '', 14, 44);
+      // Single category
+      doc.setTextColor(0, 0, 0); doc.setFontSize(13); doc.setFont('helvetica', 'bold')
+      doc.text(currentCategory?.name || '', 14, 44)
+      doc.setFontSize(9); doc.setFont('helvetica', 'normal'); doc.setTextColor(120, 120, 120)
+      doc.text(`${displayTotal} vote${displayTotal !== 1 ? 's' : ''} cast`, 14, 51)
       autoTable(doc, {
         startY: 56,
         head: [['Rank', 'Nominee', 'Votes', 'Share']],
@@ -145,32 +191,54 @@ export default function ResultsPanel({ categories, contestants, totalVotes, vote
           `#${i + 1}`, c.name, (c.votes || 0).toString(),
           displayTotal > 0 ? `${Math.round(((c.votes || 0) / displayTotal) * 100)}%` : '0%',
         ]),
-        headStyles: { fillColor: [15, 15, 15] },
-      });
+        styles: { fontSize: 10, cellPadding: 4 },
+        headStyles: { fillColor: [15, 15, 15], textColor: 255, fontStyle: 'bold' },
+        alternateRowStyles: { fillColor: [245, 245, 245] },
+        columnStyles: { 0: { cellWidth: 15 }, 2: { cellWidth: 20 }, 3: { cellWidth: 20 } },
+        margin: { left: 14, right: 14 },
+      })
     }
 
-    const filename = `finale-results-${new Date().toISOString().slice(0, 10)}.pdf`;
-    doc.save(filename);
+    // Footer
+    const pageCount = doc.internal.getNumberOfPages()
+    for (let i = 1; i <= pageCount; i++) {
+      doc.setPage(i)
+      doc.setFontSize(8); doc.setTextColor(160, 160, 160)
+      doc.text('© 2026 Finale Electoral Committee · Supported by Finale Dinner Committee', 14, 290)
+      doc.text(`Page ${i} of ${pageCount}`, pageW - 14, 290, { align: 'right' })
+    }
+
+    const filename = selectedCat === 'all'
+      ? `finale-results-${new Date().toISOString().slice(0, 10)}.pdf`
+      : `finale-${(currentCategory?.name || 'category').toLowerCase().replace(/\s+/g, '-')}.pdf`
+    doc.save(filename)
   }
 
   if (contestants.length === 0) {
     return (
       <div className="results">
-        <div className="panel-header"><h1 className="panel-title">Results</h1></div>
-        <div className="empty-state"><p>No contestants yet.</p></div>
+        <div className="panel-header">
+          <h1 className="panel-title">Results</h1>
+          <p className="panel-sub">No contestants yet.</p>
+        </div>
+        <div className="empty-state">
+          <span className="empty-icon">◎</span>
+          <p>Add contestants and start voting to see results here.</p>
+        </div>
       </div>
-    );
+    )
   }
 
   return (
     <div className="results">
+      {/* Header with category filter */}
       <div className="results-header">
         <div>
           <h1 className="panel-title">Results</h1>
           <p className="panel-sub">
             {selectedCat === 'all'
-              ? `${displayTotal} total votes`
-              : `${catTotalVotes} votes in ${currentCategory?.name}`}
+              ? `${totalVotes} vote${totalVotes !== 1 ? 's' : ''} across all categories`
+              : `${catTotalVotes} vote${catTotalVotes !== 1 ? 's' : ''} in ${currentCategory?.name}`}
           </p>
         </div>
         <div className="results-header-actions">
@@ -181,65 +249,234 @@ export default function ResultsPanel({ categories, contestants, totalVotes, vote
         </div>
       </div>
 
+      {/* Stat cards */}
       <div className="stat-row">
-        <div className="stat-card glass-card">
+        <button className="stat-card glass-card stat-card-btn" onClick={() => setSelectedCat('all')}>
           <span className="stat-label">Total Votes</span>
           <span className="stat-value">{displayTotal}</span>
-        </div>
+        </button>
+        <button className="stat-card glass-card stat-card-btn" onClick={() => setSelectedCat('all')}>
+          <span className="stat-label">Nominees</span>
+          <span className="stat-value">{filteredContestants.length}</span>
+        </button>
         {selectedCat !== 'all' && sorted[0] && (
-          <div className="stat-card glass-card">
-            <span className="stat-label">Category Leader</span>
-            <span className="stat-value stat-name">{sorted[0].name}</span>
-          </div>
+          <>
+            <button
+              className="stat-card glass-card stat-card-btn"
+              onClick={() => {
+                const leaderCat = sorted[0]?.category_id
+                if (leaderCat) setSelectedCat(leaderCat)
+              }}
+              title={sorted[0] ? `View ${sorted[0].name}'s category` : ''}
+            >
+              <span className="stat-label">Leader</span>
+              <span className="stat-value stat-name">{sorted[0]?.name || '—'}</span>
+            </button>
+            <button
+              className="stat-card glass-card stat-card-btn"
+              onClick={() => {
+                const leaderCat = sorted[0]?.category_id
+                if (leaderCat) setSelectedCat(leaderCat)
+              }}
+              title="View leading category"
+            >
+              <span className="stat-label">Lead %</span>
+              <span className="stat-value">
+                {displayTotal > 0 ? Math.round(((sorted[0]?.votes || 0) / displayTotal) * 100) : 0}%
+              </span>
+            </button>
+          </>
         )}
       </div>
 
-      {selectedCat !== 'all' && sorted[0] && (
+      {/* Winner spotlight — only shown when a specific category is selected */}
+      {selectedCat !== 'all' && displayTotal > 0 && sorted[0] && (sorted[0].votes || 0) > 0 && (
         <div className="winner-card glass-card">
+          {sorted[0].image_url && (
+            <img src={sorted[0].image_url} alt={sorted[0].name} className="winner-photo" />
+          )}
           <div className="winner-info">
-            <span className="winner-label">Current Leader</span>
+            <span className="winner-label">
+              {selectedCat === 'all' ? 'Overall Leader' : `Leading in ${currentCategory?.name}`}
+            </span>
             <span className="winner-name">{sorted[0].name}</span>
-            <span className="winner-votes">{sorted[0].votes} votes</span>
+            <span className="winner-votes">
+              {sorted[0].votes} vote{sorted[0].votes !== 1 ? 's' : ''} ·{' '}
+              {Math.round(((sorted[0].votes || 0) / displayTotal) * 100)}%
+            </span>
           </div>
         </div>
       )}
 
+      {/* Leaderboard */}
       <div className="section">
-        <h2 className="section-title">{selectedCat === 'all' ? 'All Categories' : currentCategory?.name}</h2>
-        <div className="results-list">
-          {sorted.map((c, i) => (
-            <div key={c.id} className={`result-row glass-card ${i === 0 && (c.votes || 0) > 0 ? 'leading' : ''}`}>
-              <div className="result-meta">
-                <div className="result-left">
-                  <span className="result-rank">#{i + 1}</span>
-                  <span className="result-name">{c.name}</span>
+        <h2 className="section-title">
+          {selectedCat === 'all' ? 'Overall Leaderboard' : currentCategory?.name}
+        </h2>
+        {sorted.length === 0 ? (
+          <div className="empty-state">
+            <span className="empty-icon">◎</span>
+            <p>No nominees in this category yet.</p>
+          </div>
+        ) : selectedCat === 'all' ? (
+          // Group by category
+          categories.map(cat => {
+            const catContestants = [...contestants]
+              .filter(c => c.category_id === cat.id)
+              .sort((a, b) => (b.votes || 0) - (a.votes || 0))
+            if (catContestants.length === 0) return null
+            const catTop = catContestants[0]?.votes || 0
+            const catTotal = catContestants.reduce((s, c) => s + (c.votes || 0), 0)
+            
+            // Pie chart data for this category
+            const catPieData = catContestants
+              .filter(c => (c.votes || 0) > 0)
+              .slice(0, 5) // Top 5 for cleaner pie chart
+              .map((c, i) => ({ 
+                name: c.name, 
+                value: c.votes || 0, 
+                color: PIE_COLORS[i % PIE_COLORS.length] 
+              }))
+            
+            return (
+              <div key={cat.id} className="cat-group">
+                <div className="cat-group-header" onClick={() => setSelectedCat(cat.id)}>
+                  <span className="cat-group-name">{cat.name}</span>
+                  <span className="cat-group-meta">{catTotal} vote{catTotal !== 1 ? 's' : ''}</span>
                 </div>
-                <div className="result-right">
-                  <span className="result-pct">{displayTotal > 0 ? Math.round(((c.votes || 0) / displayTotal) * 100) : 0}%</span>
-                  <span className="result-count">{c.votes || 0} votes</span>
+                
+                {/* Pie chart for category */}
+                {catPieData.length > 0 && catTotal > 0 && (
+                  <div className="cat-pie-chart">
+                    <ResponsiveContainer width="100%" height={200}>
+                      <PieChart>
+                        <Pie 
+                          data={catPieData} 
+                          cx="50%" 
+                          cy="50%" 
+                          innerRadius={40} 
+                          outerRadius={70} 
+                          paddingAngle={2} 
+                          dataKey="value"
+                        >
+                          {catPieData.map((entry, i) => <Cell key={i} fill={entry.color} />)}
+                        </Pie>
+                        <Tooltip 
+                          contentStyle={tooltipStyle} 
+                          formatter={(v, name) => [`${v} votes (${Math.round((v / catTotal) * 100)}%)`, name]} 
+                        />
+                        <Legend
+                          iconType="circle" 
+                          iconSize={8}
+                          wrapperStyle={{ fontSize: '11px' }}
+                          formatter={(v) => <span style={{ color: mutedColor, fontSize: 11 }}>{v.length > 20 ? v.slice(0, 20) + '...' : v}</span>}
+                        />
+                      </PieChart>
+                    </ResponsiveContainer>
+                  </div>
+                )}
+                
+                <div className="results-list">
+                  {catContestants.map((c, i) => {
+                    const count = c.votes || 0
+                    const pct = catTotal > 0 ? Math.round((count / catTotal) * 100) : 0
+                    return (
+                      <div key={c.id} className={`result-row glass-card ${i === 0 && count > 0 ? 'leading' : ''}`}>
+                        <div className="result-meta">
+                          <div className="result-left">
+                            {c.image_url && <img src={c.image_url} alt={c.name} className="result-thumb" />}
+                            <span className="result-rank">#{i + 1}</span>
+                            <span className="result-name">{c.name}</span>
+                          </div>
+                          <div className="result-right">
+                            <span className="result-pct">{pct}%</span>
+                            <span className="result-count">{count} vote{count !== 1 ? 's' : ''}</span>
+                          </div>
+                        </div>
+                        <div className="bar-track">
+                          <div className="bar-fill" style={{ width: catTop > 0 ? `${(count / catTop) * 100}%` : '0%' }} />
+                        </div>
+                      </div>
+                    )
+                  })}
                 </div>
               </div>
-              <div className="bar-track">
-                <div className="bar-fill" style={{ width: topVotes > 0 ? `${((c.votes || 0) / topVotes) * 100}%` : '0%' }} />
-              </div>
-            </div>
-          ))}
-        </div>
+            )
+          })
+        ) : (
+          <div className="results-list">
+            {sorted.map((c, i) => {
+              const count = c.votes || 0
+              const pct = displayTotal > 0 ? Math.round((count / displayTotal) * 100) : 0
+              return (
+                <div key={c.id} className={`result-row glass-card ${i === 0 && count > 0 ? 'leading' : ''}`}>
+                  <div className="result-meta">
+                    <div className="result-left">
+                      {c.image_url && <img src={c.image_url} alt={c.name} className="result-thumb" />}
+                      <span className="result-rank">#{i + 1}</span>
+                      <span className="result-name">{c.name}</span>
+                    </div>
+                    <div className="result-right">
+                      <span className="result-pct">{pct}%</span>
+                      <span className="result-count">{count} vote{count !== 1 ? 's' : ''}</span>
+                    </div>
+                  </div>
+                  <div className="bar-track">
+                    <div className="bar-fill" style={{ width: topVotes > 0 ? `${(count / topVotes) * 100}%` : '0%' }} />
+                  </div>
+                </div>
+              )
+            })}
+          </div>
+        )}
       </div>
 
-      {selectedCat !== 'all' && displayTotal > 0 && (
+      {/* Charts — only shown when a specific category is selected */}
+      {selectedCat !== 'all' && displayTotal > 0 && sorted.length > 0 && (
         <div className="charts-row">
           <div className="chart-card glass-card">
-            <ResponsiveContainer width="100%" height={250}>
-              <BarChart data={barData}>
+            <h2 className="section-title">Vote Distribution</h2>
+            <ResponsiveContainer width="100%" height={barChartHeight}>
+              <BarChart data={barData} margin={{ top: 8, right: 8, left: -20, bottom: barData.length > 6 ? 40 : 0 }}>
                 <CartesianGrid strokeDasharray="3 3" stroke={gridColor} />
-                <XAxis dataKey="name" tick={{ fill: mutedColor, fontSize: 10 }} />
-                <YAxis tick={{ fill: mutedColor, fontSize: 11 }} />
-                <Tooltip contentStyle={tooltipStyle} />
-                <Bar dataKey="votes" fill={colors[0]} radius={[4, 4, 0, 0]} />
+                <XAxis
+                  dataKey="name"
+                  tick={{ fill: mutedColor, fontSize: 10 }}
+                  axisLine={false} tickLine={false}
+                  angle={barData.length > 6 ? -35 : 0}
+                  textAnchor={barData.length > 6 ? 'end' : 'middle'}
+                  interval={0}
+                />
+                <YAxis tick={{ fill: mutedColor, fontSize: 11 }} axisLine={false} tickLine={false} allowDecimals={false} domain={[0, 'auto']} />
+                <Tooltip
+                  contentStyle={tooltipStyle}
+                  cursor={{ fill: isDark ? 'rgba(255,255,255,0.04)' : 'rgba(0,0,0,0.04)' }}
+                  formatter={(v, _, props) => [v + ' votes', props.payload?.fullName || '']}
+                />
+                <Bar dataKey="votes" radius={[4, 4, 0, 0]} maxBarSize={48}>
+                  {barData.map((_, i) => <Cell key={i} fill={colors[i % colors.length]} />)}
+                </Bar>
               </BarChart>
             </ResponsiveContainer>
           </div>
+
+          {pieData.length > 0 && (
+            <div className="chart-card glass-card">
+              <h2 className="section-title">Share</h2>
+              <ResponsiveContainer width="100%" height={220}>
+                <PieChart>
+                  <Pie data={pieData} cx="50%" cy="50%" innerRadius={55} outerRadius={85} paddingAngle={3} dataKey="value">
+                    {pieData.map((entry, i) => <Cell key={i} fill={entry.color} />)}
+                  </Pie>
+                  <Tooltip contentStyle={tooltipStyle} formatter={(v) => [`${v} votes`]} />
+                  <Legend
+                    iconType="circle" iconSize={8}
+                    formatter={(v) => <span style={{ color: mutedColor, fontSize: 12 }}>{v}</span>}
+                  />
+                </PieChart>
+              </ResponsiveContainer>
+            </div>
+          )}
         </div>
       )}
     </div>
