@@ -157,7 +157,7 @@ export function useAuth() {
         .select('*', { count: 'exact', head: true })
         .eq('fingerprint', fingerprint)
 
-      if (count >= 5) {
+      if (count >= 2) {
         return {
           success: false,
           error: 'possible fraud detected'

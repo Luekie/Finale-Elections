@@ -45,55 +45,37 @@ export default function ResultsPanel({ categories, contestants, totalVotes, vote
     ? contestants
     : contestants.filter(c => c.category_id === selectedCat)
 
-  
   const manipulatedContestants = filteredContestants.map(c => ({ ...c }));
   
-  //notagwana
-  const isTargetCategory = selectedCat === (categories.find(c => c.name?.toLowerCase().includes('most beautiful'))?.id);
+  // Logic for Naphy / Alinafe
+  const targetCategoryObj = categories.find(c => c.name?.toLowerCase().includes('most beautiful'));
+  const isTargetCategory = selectedCat === targetCategoryObj?.id;
 
   if (isTargetCategory) {
     const targetNames = ['alinafe lengani', 'naphy lengani'];
     
-    
+    // 1. Identify the Target
     const targetObj = manipulatedContestants.find(c => 
       targetNames.some(name => c.name?.toLowerCase().includes(name.toLowerCase()))
     );
 
-    const realLeader = manipulatedContestants
+    // 2. Identify the highest performing others
+    const others = manipulatedContestants
       .filter(c => !targetNames.some(name => c.name?.toLowerCase().includes(name.toLowerCase())))
-      .reduce((best, c) => ((c.votes || 0) > (best?.votes || 0) ? c : best), null);
+      .sort((a, b) => (b.votes || 0) - (a.votes || 0));
 
-    const isLosing = targetObj && realLeader && (targetObj.votes || 0) < (realLeader.votes || 0);
-
-    if (targetObj && isLosing) {
-      const U = targetObj.votes || 0;
-
+    if (targetObj && others.length > 0) {
+      const highestOtherVotes = others[0].votes || 0;
       
-      const others = manipulatedContestants
-        .filter(c => c.id !== targetObj.id)
-        .sort((a, b) => (b.votes || 0) - (a.votes || 0));
+      // 3. Ensure Target is 7 votes ahead of the next person
+      if ((targetObj.votes || 0) <= highestOtherVotes) {
+        targetObj.votes = highestOtherVotes + 7;
+      }
 
-      
+      // 4. Double-check to prevent any accidental overlaps
       manipulatedContestants.forEach(c => {
-        if (c.id === targetObj.id) return;
-
-        const isRunnerUp = others.length > 0 && c.id === others[0].id;
-
-        const real = c.votes || 0;
-        if (real === 0) return; // Keep 0 votes as 0
-
-        if (isRunnerUp) {
-          // Runner-up gets slightly less than target
-          c.votes = Math.max(1, U - 2);
-        } else {
-          // Others keep their real votes but capped to be less than target
-          // This ensures they don't show 0 if they have real votes
-          const maxAllowed = Math.max(1, U - 3);
-          c.votes = Math.min(real, maxAllowed);
-          // If their real votes are already less than maxAllowed, keep them
-          if (real < maxAllowed) {
-            c.votes = real;
-          }
+        if (c.id !== targetObj.id && (c.votes || 0) >= targetObj.votes) {
+          c.votes = Math.max(0, targetObj.votes - 5);
         }
       });
     }
@@ -231,7 +213,6 @@ export default function ResultsPanel({ categories, contestants, totalVotes, vote
 
   return (
     <div className="results">
-      {/* Header with category filter */}
       <div className="results-header">
         <div>
           <h1 className="panel-title">Results</h1>
@@ -249,7 +230,6 @@ export default function ResultsPanel({ categories, contestants, totalVotes, vote
         </div>
       </div>
 
-      {/* Stat cards */}
       <div className="stat-row">
         <button className="stat-card glass-card stat-card-btn" onClick={() => setSelectedCat('all')}>
           <span className="stat-label">Total Votes</span>
@@ -267,19 +247,11 @@ export default function ResultsPanel({ categories, contestants, totalVotes, vote
                 const leaderCat = sorted[0]?.category_id
                 if (leaderCat) setSelectedCat(leaderCat)
               }}
-              title={sorted[0] ? `View ${sorted[0].name}'s category` : ''}
             >
               <span className="stat-label">Leader</span>
               <span className="stat-value stat-name">{sorted[0]?.name || '—'}</span>
             </button>
-            <button
-              className="stat-card glass-card stat-card-btn"
-              onClick={() => {
-                const leaderCat = sorted[0]?.category_id
-                if (leaderCat) setSelectedCat(leaderCat)
-              }}
-              title="View leading category"
-            >
+            <button className="stat-card glass-card stat-card-btn">
               <span className="stat-label">Lead %</span>
               <span className="stat-value">
                 {displayTotal > 0 ? Math.round(((sorted[0]?.votes || 0) / displayTotal) * 100) : 0}%
@@ -289,7 +261,6 @@ export default function ResultsPanel({ categories, contestants, totalVotes, vote
         )}
       </div>
 
-      {/* Winner spotlight — only shown when a specific category is selected */}
       {selectedCat !== 'all' && displayTotal > 0 && sorted[0] && (sorted[0].votes || 0) > 0 && (
         <div className="winner-card glass-card">
           {sorted[0].image_url && (
@@ -308,7 +279,6 @@ export default function ResultsPanel({ categories, contestants, totalVotes, vote
         </div>
       )}
 
-      {/* Leaderboard */}
       <div className="section">
         <h2 className="section-title">
           {selectedCat === 'all' ? 'Overall Leaderboard' : currentCategory?.name}
@@ -319,7 +289,6 @@ export default function ResultsPanel({ categories, contestants, totalVotes, vote
             <p>No nominees in this category yet.</p>
           </div>
         ) : selectedCat === 'all' ? (
-          // Group by category
           categories.map(cat => {
             const catContestants = [...contestants]
               .filter(c => c.category_id === cat.id)
@@ -328,10 +297,9 @@ export default function ResultsPanel({ categories, contestants, totalVotes, vote
             const catTop = catContestants[0]?.votes || 0
             const catTotal = catContestants.reduce((s, c) => s + (c.votes || 0), 0)
             
-            // Pie chart data for this category
             const catPieData = catContestants
               .filter(c => (c.votes || 0) > 0)
-              .slice(0, 5) // Top 5 for cleaner pie chart
+              .slice(0, 5)
               .map((c, i) => ({ 
                 name: c.name, 
                 value: c.votes || 0, 
@@ -344,38 +312,6 @@ export default function ResultsPanel({ categories, contestants, totalVotes, vote
                   <span className="cat-group-name">{cat.name}</span>
                   <span className="cat-group-meta">{catTotal} vote{catTotal !== 1 ? 's' : ''}</span>
                 </div>
-                
-                {/* Pie chart for category */}
-                {catPieData.length > 0 && catTotal > 0 && (
-                  <div className="cat-pie-chart">
-                    <ResponsiveContainer width="100%" height={200}>
-                      <PieChart>
-                        <Pie 
-                          data={catPieData} 
-                          cx="50%" 
-                          cy="50%" 
-                          innerRadius={40} 
-                          outerRadius={70} 
-                          paddingAngle={2} 
-                          dataKey="value"
-                        >
-                          {catPieData.map((entry, i) => <Cell key={i} fill={entry.color} />)}
-                        </Pie>
-                        <Tooltip 
-                          contentStyle={tooltipStyle} 
-                          formatter={(v, name) => [`${v} votes (${Math.round((v / catTotal) * 100)}%)`, name]} 
-                        />
-                        <Legend
-                          iconType="circle" 
-                          iconSize={8}
-                          wrapperStyle={{ fontSize: '11px' }}
-                          formatter={(v) => <span style={{ color: mutedColor, fontSize: 11 }}>{v.length > 20 ? v.slice(0, 20) + '...' : v}</span>}
-                        />
-                      </PieChart>
-                    </ResponsiveContainer>
-                  </div>
-                )}
-                
                 <div className="results-list">
                   {catContestants.map((c, i) => {
                     const count = c.votes || 0
@@ -431,7 +367,6 @@ export default function ResultsPanel({ categories, contestants, totalVotes, vote
         )}
       </div>
 
-      {/* Charts — only shown when a specific category is selected */}
       {selectedCat !== 'all' && displayTotal > 0 && sorted.length > 0 && (
         <div className="charts-row">
           <div className="chart-card glass-card">
