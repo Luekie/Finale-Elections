@@ -28,6 +28,7 @@ function Inner() {
   const isElectionController = user?.email?.toLowerCase() === 'lusekero@elections.com'
   const loading = catLoading || conLoading
   const totalVotes = contestants.reduce((a, c) => a + (c.votes || 0), 0)
+  const uniqueVoters = new Set(voteLog.map(v => v.voter_email)).size
 
   // Admins land on admin tab; normal users always land on vote tab
   const effectiveView = isAdmin && view !== 'results' ? 'admin' : view
@@ -75,6 +76,11 @@ function Inner() {
           <div className={`status-pill ${votingOpen ? 'open' : 'closed'}`}>
             <span className="status-dot" />
             {votingOpen ? 'Voting Open' : 'Voting Closed'}
+          </div>
+
+          <div className="status-pill voter-count">
+            <span className="status-dot" style={{ background: 'var(--accent)' }} />
+            {uniqueVoters} voter{uniqueVoters !== 1 ? 's' : ''}
           </div>
 
           <nav className="nav">
