@@ -147,18 +147,17 @@ export function useAuth() {
     if (!valid) return { success: false, error: reason }
     if (password.length < 8) return { success: false, error: 'Password must be at least 8 characters.' }
 
-    // Check device fingerprint — block if this device already registered
+    // Check device fingerprint — block if this device has already registered 4 or more accounts
     let fingerprint = null
     try {
       fingerprint = await getDeviceFingerprint()
 
-      const { data: existing } = await supabase
+      const { count } = await supabase
         .from('device_registrations')
-        .select('email')
+        .select('*', { count: 'exact', head: true })
         .eq('fingerprint', fingerprint)
-        .maybeSingle()
 
-      if (existing) {
+      if (count >= 5) {
         return {
           success: false,
           error: 'possible fraud detected'
