@@ -146,10 +146,13 @@ export function useAuth() {
     if (!valid) return { success: false, error: reason }
     if (password.length < 8) return { success: false, error: 'Password must be at least 8 characters.' }
 
-    // Check device fingerprint — block if this device already registered
+    // Check device fingerprint — block if this device already registered,
+    // or if it attempted a registration within the last 16 hours
     let fingerprint = null
     try {
       fingerprint = await getDeviceFingerprint()
+
+      // Block if fingerprint already has a successful registration
       const { data: existing } = await supabase
         .from('device_registrations')
         .select('email')
@@ -162,6 +165,28 @@ export function useAuth() {
           error: 'Don not be a FRAUD You !, try again and we hack your device !'
         }
       }
+
+      // Block if a signup attempt was made from this device in the last 16 hours
+      const cutoff = new Date(Date.now() - 16 * 60 * 60 * 1000).toISOString()
+      const { data: recentAttempt } = await supabase
+        .from('signup_attempts')
+        .select('created_at')
+        .eq('fingerprint', fingerprint)
+        .gte('created_at', cutoff)
+        .maybeSingle()
+
+      if (recentAttempt) {
+        const unlockTime = new Date(new Date(recentAttempt.created_at).getTime() + 16 * 60 * 60 * 1000)
+        const hoursLeft = Math.ceil((unlockTime - Date.now()) / (1000 * 60 * 60))
+        return {
+          success: false,
+          error: `This device was recently used to create an account. Try again in ${hoursLeft} hour${hoursLeft !== 1 ? 's' : ''}.`,
+        }
+      }
+
+      // Log this attempt before proceeding
+      await supabase.from('signup_attempts').insert({ fingerprint, email: trimmed })
+
     } catch { /* fingerprint check failed — allow signup to proceed */ }
 
     const { error } = await supabase.auth.signUp({ email: trimmed, password, options: { emailRedirectTo: undefined } })
