@@ -138,6 +138,7 @@ function Inner() {
                   contestants={contestants}
                   totalVotes={totalVotes}
                   voteLog={voteLog}
+                  uniqueVoters={uniqueVoters}
                 />
               ) : (
                 <div className="results-locked">

@@ -29,7 +29,7 @@ function useIsDark() {
   return document.documentElement.getAttribute('data-theme') !== 'light'
 }
 
-export default function ResultsPanel({ categories, contestants, totalVotes, voteLog }) {
+export default function ResultsPanel({ categories, contestants, totalVotes, voteLog, uniqueVoters = 0 }) {
   const [selectedCat, setSelectedCat] = useState('all')
   const isDark = useIsDark()
   const colors = isDark ? COLORS : COLORS_LIGHT
@@ -125,6 +125,7 @@ export default function ResultsPanel({ categories, contestants, totalVotes, vote
         head: [['Metric', 'Value']],
         body: [
           ['Total Votes Cast', totalVotes.toString()],
+          ['Total Voters', uniqueVoters.toString()],
           ['Total Categories', categories.length.toString()],
           ['Total Nominees', contestants.length.toString()],
         ],
@@ -150,12 +151,22 @@ export default function ResultsPanel({ categories, contestants, totalVotes, vote
           startY: 32,
           head: [['Rank', 'Nominee', 'Votes', 'Share']],
           body: catContestants.map((c, i) => [
-            `#${i + 1}`, c.name, (c.votes || 0).toString(),
+            i === 0 && (c.votes || 0) > 0 ? '🏆 #1' : `#${i + 1}`,
+            i === 0 && (c.votes || 0) > 0 ? `${c.name} ★ WINNER` : c.name,
+            (c.votes || 0).toString(),
             catTotal > 0 ? `${Math.round(((c.votes || 0) / catTotal) * 100)}%` : '0%',
           ]),
           styles: { fontSize: 10, cellPadding: 4 },
           headStyles: { fillColor: [15, 15, 15], textColor: 255, fontStyle: 'bold' },
           alternateRowStyles: { fillColor: [245, 245, 245] },
+          bodyStyles: {},
+          didParseCell: (data) => {
+            if (data.row.index === 0 && catContestants[0]?.votes > 0) {
+              data.cell.styles.fillColor = [255, 215, 0]
+              data.cell.styles.textColor = [0, 0, 0]
+              data.cell.styles.fontStyle = 'bold'
+            }
+          },
           columnStyles: { 0: { cellWidth: 15 }, 2: { cellWidth: 20 }, 3: { cellWidth: 20 } },
           margin: { left: 14, right: 14 },
         })
@@ -316,13 +327,15 @@ export default function ResultsPanel({ categories, contestants, totalVotes, vote
                   {catContestants.map((c, i) => {
                     const count = c.votes || 0
                     const pct = catTotal > 0 ? Math.round((count / catTotal) * 100) : 0
+                    const isWinner = i === 0 && count > 0
                     return (
-                      <div key={c.id} className={`result-row glass-card ${i === 0 && count > 0 ? 'leading' : ''}`}>
+                      <div key={c.id} className={`result-row glass-card ${isWinner ? 'leading' : ''}`}>
                         <div className="result-meta">
                           <div className="result-left">
                             {c.image_url && <img src={c.image_url} alt={c.name} className="result-thumb" />}
                             <span className="result-rank">#{i + 1}</span>
                             <span className="result-name">{c.name}</span>
+                            {isWinner && <span className="winner-tag">🏆 Winner</span>}
                           </div>
                           <div className="result-right">
                             <span className="result-pct">{pct}%</span>
@@ -351,6 +364,7 @@ export default function ResultsPanel({ categories, contestants, totalVotes, vote
                       {c.image_url && <img src={c.image_url} alt={c.name} className="result-thumb" />}
                       <span className="result-rank">#{i + 1}</span>
                       <span className="result-name">{c.name}</span>
+                      {i === 0 && count > 0 && <span className="winner-tag">🏆 Winner</span>}
                     </div>
                     <div className="result-right">
                       <span className="result-pct">{pct}%</span>
