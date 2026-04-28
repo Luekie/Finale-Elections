@@ -166,32 +166,39 @@ export function useAuth() {
     if (!valid) return { success: false, error: reason }
     if (password.length < 8) return { success: false, error: 'Password must be at least 8 characters.' }
 
-    // Check device fingerprint — block if this device has already registered 4 or more accounts
-    let fingerprint = null
+    // Check device fingerprint — block if this device has already registered 2 or more accounts
+    let fingerprint
     try {
       fingerprint = await getDeviceFingerprint()
+    } catch {
+      return { success: false, error: 'Unable to verify your device. Please try a different browser.' }
+    }
 
-      const { count } = await supabase
-        .from('device_registrations')
-        .select('*', { count: 'exact', head: true })
-        .eq('fingerprint', fingerprint)
+    const { count, error: countError } = await supabase
+      .from('device_registrations')
+      .select('*', { count: 'exact', head: true })
+      .eq('fingerprint', fingerprint)
 
-      if (count >= 2) {
-        return {
-          success: false,
-          error: 'possible fraud detected'
-        }
-      }
-    } catch { /* fingerprint check failed — allow signup to proceed */ }
+    if (countError) {
+      return { success: false, error: 'Verification failed. Please try again.' }
+    }
+
+    if (count >= 2) {
+      return { success: false, error: 'possible fraud detected' }
+    }
 
     const { error } = await supabase.auth.signUp({ email: trimmed, password, options: { emailRedirectTo: undefined } })
     if (error) return { success: false, error: error.message || 'Sign up failed.' }
 
-    // Record the device fingerprint after successful signup
-    if (fingerprint) {
-      try {
-        await supabase.from('device_registrations').insert({ fingerprint, email: trimmed })
-      } catch { /* non-fatal — don't block the user */ }
+    // Record the fingerprint — if this fails, roll back by deleting the auth account
+    const { error: regError } = await supabase
+      .from('device_registrations')
+      .insert({ fingerprint, email: trimmed })
+
+    if (regError) {
+      // Can't record the device — sign them out to prevent an untracked account
+      await supabase.auth.signOut()
+      return { success: false, error: 'Registration could not be completed. Please try again.' }
     }
 
     return { success: true }
