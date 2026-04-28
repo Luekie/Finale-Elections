@@ -1,4 +1,4 @@
-import { useState, useRef } from 'react'
+import { useState, useRef, useEffect } from 'react'
 import BallotScreen from './BallotScreen'
 import ReviewScreen from './ReviewScreen'
 import ConfirmationScreen from './ConfirmationScreen'
@@ -6,15 +6,43 @@ import './VotingPanel.css'
 
 export default function VotingPanel({
   categories, contestants, votingOpen,
-  votedForInCategory, saveAllVotes, votes, signOut
+  votedForInCategory, saveAllVotes, votes, signOut, userEmail
 }) {
-  const [step, setStep] = useState('ballot') // 'ballot' | 'review' | 'confirmation'
+  const [step, setStep] = useState('ballot')
   const [activeCat, setActiveCat] = useState(null)
-  const [pending, setPending] = useState({})
   const [submitting, setSubmitting] = useState(false)
   const [submitError, setSubmitError] = useState(null)
   const [signingOut, setSigningOut] = useState(false)
-  const lastSubmitRef = useRef(0) // timestamp of last submit attempt — rate limit guard
+  const lastSubmitRef = useRef(0)
+
+  // Persist pending selections per user in localStorage
+  const storageKey = userEmail ? `pending_votes_${userEmail}` : null
+
+  const [pending, setPendingRaw] = useState(() => {
+    if (!storageKey) return {}
+    try { return JSON.parse(localStorage.getItem(storageKey) || '{}') } catch { return {} }
+  })
+
+  const setPending = (updater) => {
+    setPendingRaw(prev => {
+      const next = typeof updater === 'function' ? updater(prev) : updater
+      if (storageKey) {
+        try { localStorage.setItem(storageKey, JSON.stringify(next)) } catch { /* storage full */ }
+      }
+      return next
+    })
+  }
+
+  // Clear pending from storage when user changes
+  useEffect(() => {
+    if (!storageKey) return
+    try {
+      const saved = JSON.parse(localStorage.getItem(storageKey) || '{}')
+      setPendingRaw(saved)
+    } catch {
+      setPendingRaw({})
+    }
+  }, [storageKey])
 
   const savedCount = categories.filter(c => votedForInCategory(c.id)).length
 
@@ -49,6 +77,7 @@ export default function VotingPanel({
     try {
       if (Object.keys(toSave).length > 0) await saveAllVotes(toSave)
       setPending({})
+      if (storageKey) localStorage.removeItem(storageKey)
       setStep('confirmation')
       setSigningOut(true)
       // Lock out the user — they've voted, sign them out after a short delay

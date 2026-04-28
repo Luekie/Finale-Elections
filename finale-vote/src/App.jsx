@@ -128,6 +128,7 @@ function Inner() {
                 saveAllVotes={saveAllVotes}
                 votes={votes}
                 signOut={signOut}
+                userEmail={user?.email}
               />
             )}
             {effectiveView === 'results' && (
