@@ -379,11 +379,6 @@ export default function AdminPanel({
               {resetting ? 'Resetting...' : 'Reset all votes'}
             </button>
           )}
-          {isSuperAdmin && (
-            <button className="btn-ghost-danger" onClick={handleInvalidateSessions} disabled={invalidating}>
-              {invalidating ? 'Invalidating...' : '⚡ Kick all voters'}
-            </button>
-          )}
         </div>
 
         {categories.length === 0 && (
