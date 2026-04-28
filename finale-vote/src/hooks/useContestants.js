@@ -51,10 +51,10 @@ export function useContestants() {
 
     if (imageFile) {
       const ext = imageFile.name.split('.').pop()
-      const fileName = `${data.id}.${ext}`
+      const fileName = `${data.id}-${Date.now()}.${ext}`
       const { error: upErr } = await supabase.storage
         .from('contestant-photos')
-        .upload(fileName, imageFile, { upsert: true })
+        .upload(fileName, imageFile, { upsert: false })
       if (!upErr) {
         const { data: { publicUrl } } = supabase.storage
           .from('contestant-photos')
@@ -112,15 +112,25 @@ export function useContestants() {
   }
 
   const updateContestantPhoto = async (id, imageFile) => {
+    // Delete any existing photo for this contestant first
+    const existing = contestants.find(c => c.id === id)
+    if (existing?.image_url) {
+      const oldFileName = existing.image_url.split('/').pop().split('?')[0]
+      await supabase.storage.from('contestant-photos').remove([oldFileName])
+    }
+
+    // Use a timestamp to bust CDN cache — ensures the new image always loads fresh
     const ext = imageFile.name.split('.').pop()
-    const fileName = `${id}.${ext}`
+    const fileName = `${id}-${Date.now()}.${ext}`
     const { error: upErr } = await supabase.storage
       .from('contestant-photos')
-      .upload(fileName, imageFile, { upsert: true })
+      .upload(fileName, imageFile, { upsert: false })
     if (upErr) throw upErr
+
     const { data: { publicUrl } } = supabase.storage
       .from('contestant-photos')
       .getPublicUrl(fileName)
+
     const { error } = await supabase
       .from('contestants')
       .update({ image_url: publicUrl })

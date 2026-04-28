@@ -163,7 +163,7 @@ export function useAuth() {
       if (existing) {
         return {
           success: false,
-          error: 'Don not be a FRAUD You !, try again and we hack your device !'
+          error: 'possible fraud detected'
         }
       }
 
