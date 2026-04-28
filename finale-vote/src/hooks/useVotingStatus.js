@@ -9,17 +9,25 @@ export function useVotingStatus() {
 
   const fetchStatus = useCallback(async () => {
     const { data } = await supabase.from('settings').select('key, value')
-    const map = Object.fromEntries((data || []).map(r => [r.key, r.value]))
-    setVotingOpen(map['voting_open'] === 'true')
-    setResultsVisible(map['results_visible'] === 'true')
-    setScheduledTime(map['scheduled_voting_time'] || null)
+    if (!data) return // don't update state if query failed
+    const map = Object.fromEntries(data.map(r => [r.key, r.value]))
+    // Only update each value if the key exists in the response
+    if ('voting_open' in map) setVotingOpen(map['voting_open'] === 'true')
+    if ('results_visible' in map) setResultsVisible(map['results_visible'] === 'true')
+    if ('scheduled_voting_time' in map) setScheduledTime(map['scheduled_voting_time'] || null)
     setStatusLoading(false)
   }, [])
 
   useEffect(() => {
     fetchStatus()
     const ch = supabase.channel('settings-changes')
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'settings' }, fetchStatus)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'settings' }, (payload) => {
+        // Only refetch for keys that affect voting status — ignore session_token etc.
+        const relevantKeys = ['voting_open', 'results_visible', 'scheduled_voting_time']
+        if (!payload.new?.key || relevantKeys.includes(payload.new.key)) {
+          fetchStatus()
+        }
+      })
       .subscribe()
     return () => { supabase.removeChannel(ch) }
   }, [fetchStatus])
