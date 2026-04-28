@@ -56,8 +56,8 @@ export function validateUnimaEmail(email) {
     return { valid: false, reason: 'Student number must be at least 2 digits (e.g. 09, not 9).' }
   }
   const num = parseInt(numStr, 10)
-  if (num < 1 || num > 200) {
-    return { valid: false, reason: 'Student number must be between 01 and 200.' }
+  if (num < 1 || num > 100) {
+    return { valid: false, reason: 'Student number must be between 01 and 100.' }
   }
 
   // Prefix check
