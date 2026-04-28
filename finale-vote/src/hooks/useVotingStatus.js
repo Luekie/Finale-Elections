@@ -63,6 +63,12 @@ export function useVotingStatus() {
       .upsert({ key: 'scheduled_voting_time', value: isoTime || '' }, { onConflict: 'key' })
   }
 
+  const invalidateAllSessions = async () => {
+    const token = Date.now().toString()
+    await supabase.from('settings')
+      .upsert({ key: 'session_token', value: token }, { onConflict: 'key' })
+  }
+
   return { 
     votingOpen, 
     resultsVisible, 
@@ -70,6 +76,7 @@ export function useVotingStatus() {
     scheduledTime,
     setVotingOpen: setVotingOpenFn, 
     setResultsVisible: setResultsVisibleFn,
-    setScheduledVotingTime
+    setScheduledVotingTime,
+    invalidateAllSessions
   }
 }

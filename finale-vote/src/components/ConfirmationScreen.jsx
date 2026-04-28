@@ -1,7 +1,16 @@
+import { useEffect, useState } from 'react'
 import './VotingPanel.css'
 
 // Step 3 — Confirmation / My Votes (read-only after final submission)
-export default function ConfirmationScreen({ categories, contestants, votedForInCategory }) {
+export default function ConfirmationScreen({ categories, contestants, votedForInCategory, signingOut }) {
+  const [countdown, setCountdown] = useState(4)
+
+  useEffect(() => {
+    if (!signingOut) return
+    const t = setInterval(() => setCountdown(c => c - 1), 1000)
+    return () => clearInterval(t)
+  }, [signingOut])
+
   const myVotes = categories
     .map(cat => {
       const votedId = votedForInCategory(cat.id)
@@ -24,6 +33,11 @@ export default function ConfirmationScreen({ categories, contestants, votedForIn
         <p className="confirmation-sub">
           Your selections have been recorded below.
         </p>
+        {signingOut && (
+          <p className="confirmation-signout-notice">
+            Signing you out in {Math.max(countdown, 0)}s — thank you for voting! 🎓
+          </p>
+        )}
       </div>
 
       {myVotes.length > 0 && (

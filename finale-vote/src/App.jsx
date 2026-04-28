@@ -22,7 +22,7 @@ function Inner() {
   const { categories, loading: catLoading, addCategory, removeCategory, reorderCategories } = useCategories()
   const { contestants, loading: conLoading, addContestant, removeContestant, resetVotes, updateContestantPhoto, updateContestantName, reorderContestants } = useContestants()
   const { votes, voteLog, saveVote, saveAllVotes, deleteVote, hasVotedInCategory, votedForInCategory } = useVoting(user?.email)
-  const { votingOpen, resultsVisible, statusLoading, scheduledTime, setVotingOpen, setResultsVisible, setScheduledVotingTime } = useVotingStatus()
+  const { votingOpen, resultsVisible, statusLoading, scheduledTime, setVotingOpen, setResultsVisible, setScheduledVotingTime, invalidateAllSessions } = useVotingStatus()
   const uniqueVoters = useVoterCount()
 
   const isAdmin = user?.isAdmin === true
@@ -125,6 +125,7 @@ function Inner() {
                 saveVote={saveVote}
                 saveAllVotes={saveAllVotes}
                 votes={votes}
+                signOut={signOut}
               />
             )}
             {effectiveView === 'results' && (
@@ -175,6 +176,7 @@ function Inner() {
                     onSetScheduledTime={setScheduledVotingTime}
                     isSuperAdmin={isSuperAdmin}
                     isElectionController={isElectionController}
+                    onInvalidateSessions={invalidateAllSessions}
                   />
                 )}
                 {adminTab === 'analytics' && (

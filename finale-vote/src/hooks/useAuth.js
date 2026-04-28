@@ -127,9 +127,28 @@ export function useAuth() {
     const handleUnload = () => { supabase.auth.signOut() }
     window.addEventListener('pagehide', handleUnload)
 
+    // Watch for session invalidation by admin
+    let lastToken = null
+    const sessionChannel = supabase.channel('session-invalidation')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'settings' }, async (payload) => {
+        if (payload.new?.key === 'session_token') {
+          const newToken = payload.new?.value
+          if (lastToken && lastToken !== newToken) {
+            await supabase.auth.signOut()
+          }
+          lastToken = newToken
+        }
+      })
+      .subscribe()
+
+    // Fetch initial token
+    supabase.from('settings').select('value').eq('key', 'session_token').maybeSingle()
+      .then(({ data }) => { if (data) lastToken = data.value })
+
     return () => {
       mounted = false
       subscription.unsubscribe()
+      supabase.removeChannel(sessionChannel)
       window.removeEventListener('pagehide', handleUnload)
     }
   }, [])

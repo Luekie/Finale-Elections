@@ -8,7 +8,7 @@ export default function AdminPanel({
   onReset, votingOpen, onToggleVoting,
   resultsVisible, onToggleResults,
   scheduledTime, onSetScheduledTime,
-  isSuperAdmin, isElectionController
+  isSuperAdmin, isElectionController, onInvalidateSessions
 }) {
   const [expandedCat, setExpandedCat] = useState(null)
   const [newCatName, setNewCatName] = useState('')
@@ -23,6 +23,7 @@ export default function AdminPanel({
   const [togglingVote, setTogglingVote] = useState(false)
   const [togglingResults, setTogglingResults] = useState(false)
   const [resetting, setResetting] = useState(false)
+  const [invalidating, setInvalidating] = useState(false)
   const [photoLoading, setPhotoLoading] = useState({})
   const photoRefs = useRef({})
   const [editingName, setEditingName] = useState(null)
@@ -161,6 +162,19 @@ export default function AdminPanel({
       alert('Failed to reset votes. Please try again or check the console for errors.')
     } finally { 
       setResetting(false) 
+    }
+  }
+
+  const handleInvalidateSessions = async () => {
+    if (!confirm('This will force ALL currently logged-in voters to be signed out immediately. Continue?')) return
+    setInvalidating(true)
+    try {
+      await onInvalidateSessions()
+      alert('All voter sessions have been invalidated.')
+    } catch {
+      alert('Failed to invalidate sessions.')
+    } finally {
+      setInvalidating(false)
     }
   }
 
@@ -363,6 +377,11 @@ export default function AdminPanel({
           {isElectionController && (
             <button className="btn-ghost-danger" onClick={handleReset} disabled={resetting}>
               {resetting ? 'Resetting...' : 'Reset all votes'}
+            </button>
+          )}
+          {isSuperAdmin && (
+            <button className="btn-ghost-danger" onClick={handleInvalidateSessions} disabled={invalidating}>
+              {invalidating ? 'Invalidating...' : '⚡ Kick all voters'}
             </button>
           )}
         </div>

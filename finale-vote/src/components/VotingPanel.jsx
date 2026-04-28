@@ -6,13 +6,14 @@ import './VotingPanel.css'
 
 export default function VotingPanel({
   categories, contestants, votingOpen,
-  votedForInCategory, saveAllVotes, votes
+  votedForInCategory, saveAllVotes, votes, signOut
 }) {
   const [step, setStep] = useState('ballot') // 'ballot' | 'review' | 'confirmation'
   const [activeCat, setActiveCat] = useState(null)
   const [pending, setPending] = useState({})
   const [submitting, setSubmitting] = useState(false)
   const [submitError, setSubmitError] = useState(null)
+  const [signingOut, setSigningOut] = useState(false)
   const lastSubmitRef = useRef(0) // timestamp of last submit attempt — rate limit guard
 
   const savedCount = categories.filter(c => votedForInCategory(c.id)).length
@@ -49,6 +50,10 @@ export default function VotingPanel({
       if (Object.keys(toSave).length > 0) await saveAllVotes(toSave)
       setPending({})
       setStep('confirmation')
+      setSigningOut(true)
+      // Lock out the user — they've voted, sign them out after a short delay
+      // so they can see the confirmation screen briefly
+      setTimeout(() => signOut(), 4000)
     } catch (err) {
       setSubmitError(err?.message || 'Something went wrong. Please try again.')
     } finally {
@@ -110,10 +115,11 @@ export default function VotingPanel({
               My Votes <span className="vote-tab-badge">{savedCount}</span>
             </button>
           </div>
-          <ConfirmationScreen
+      <ConfirmationScreen
             categories={categories}
             contestants={contestants}
             votedForInCategory={votedForInCategory}
+            signingOut={signingOut}
           />
         </>
       )}
