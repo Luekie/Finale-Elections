@@ -11,6 +11,7 @@ const ALLOWED_PREFIXES = new Set([
   'bed-che', 'bed-bio', 'bed-mat', 'bed-sed', 'bed-led', 'bsc-inf-me',
   'bsc-che-hon', 'bsc-mat', 'bsc-bio', 'bsc-phy', 'bsc-act-hon',
   'bsc-fn', 'ba-com', 'bsc-sta', 'bsc-geo', 'bsoc', 'bsoc-sw',
+  'ps','pa',
            
 ])
 
