@@ -34,6 +34,10 @@ export function useVoting(userEmail, isAdmin = false) {
   }, [userEmail, isAdmin])
 
   useEffect(() => {
+    // Clear votes immediately when user changes to prevent showing stale data
+    setVotes({})
+    setVoteLog([])
+
     if (userEmail) {
       supabase
         .from('vote_log')
