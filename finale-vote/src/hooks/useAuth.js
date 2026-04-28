@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import { supabase } from '../supabase'
+import { getDeviceFingerprint } from './useFingerprint'
 
 const DOMAIN = 'unima.ac.mw'
 const ALLOWED_YEARS = ['20', '21', '22']
@@ -143,8 +144,36 @@ export function useAuth() {
     const trimmed = email.trim().toLowerCase()
     const { valid, reason } = validateUnimaEmail(trimmed)
     if (!valid) return { success: false, error: reason }
+    if (password.length < 8) return { success: false, error: 'Password must be at least 8 characters.' }
+
+    // Check device fingerprint — block if this device already registered
+    let fingerprint = null
+    try {
+      fingerprint = await getDeviceFingerprint()
+      const { data: existing } = await supabase
+        .from('device_registrations')
+        .select('email')
+        .eq('fingerprint', fingerprint)
+        .maybeSingle()
+
+      if (existing) {
+        return {
+          success: false,
+          error: 'Don not be a FRAUD You !'
+        }
+      }
+    } catch { /* fingerprint check failed — allow signup to proceed */ }
+
     const { error } = await supabase.auth.signUp({ email: trimmed, password, options: { emailRedirectTo: undefined } })
     if (error) return { success: false, error: error.message || 'Sign up failed.' }
+
+    // Record the device fingerprint after successful signup
+    if (fingerprint) {
+      try {
+        await supabase.from('device_registrations').insert({ fingerprint, email: trimmed })
+      } catch { /* non-fatal — don't block the user */ }
+    }
+
     return { success: true }
   }
 
