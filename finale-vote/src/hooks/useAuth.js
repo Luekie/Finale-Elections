@@ -153,6 +153,20 @@ export function useAuth() {
     }
   }, [])
 
+  const signInWithGoogle = async () => {
+    const { error } = await supabase.auth.signInWithOAuth({
+      provider: 'google',
+      options: {
+        redirectTo: window.location.origin,
+        queryParams: {
+          hd: 'unima.ac.mw', // restrict to UNIMA Google Workspace domain
+        },
+      },
+    })
+    if (error) return { error: error.message }
+    return {}
+  }
+
   const signIn = async (email, password) => {
     const trimmed = email.trim().toLowerCase()
     const { error } = await supabase.auth.signInWithPassword({ email: trimmed, password })
@@ -244,5 +258,5 @@ export function useAuth() {
     setUser(null)
   }
 
-  return { user, authLoading, signIn, signUp, signInAdmin, signOut }
+  return { user, authLoading, signIn, signUp, signInWithGoogle, signInAdmin, signOut }
 }

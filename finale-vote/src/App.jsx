@@ -18,7 +18,7 @@ function Inner() {
   const [view, setView] = useState('vote')
   const [adminTab, setAdminTab] = useState('manage')
 
-  const { user, authLoading, signInAdmin, signOut, signIn, signUp } = useAuth()
+  const { user, authLoading, signInAdmin, signOut, signIn, signUp, signInWithGoogle } = useAuth()
   const { categories, loading: catLoading, addCategory, removeCategory, reorderCategories } = useCategories()
   const { contestants, loading: conLoading, addContestant, removeContestant, resetVotes, updateContestantPhoto, updateContestantName, reorderContestants } = useContestants()
   const { votes, voteLog, saveVote, saveAllVotes, deleteVote, hasVotedInCategory, votedForInCategory } = useVoting(user?.email, user?.isAdmin === true)
@@ -48,7 +48,7 @@ function Inner() {
   if (!user) {
     return (
       <div className="app">
-        <AuthGate onSignIn={signIn} onSignUp={signUp} onSignInAdmin={signInAdmin} />
+        <AuthGate onSignInWithGoogle={signInWithGoogle} onSignInAdmin={signInAdmin} />
         <footer className="footer">
           <div className="footer-inner">
             <div className="footer-row">
