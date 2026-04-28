@@ -19,16 +19,19 @@ async function withRetry(fn, maxAttempts = 3) {
   throw lastError
 }
 
-export function useVoting(userEmail) {
+export function useVoting(userEmail, isAdmin = false) {
   const [votes, setVotes] = useState({}) // { categoryId: contestantId } — last saved to DB
   const [voteLog, setVoteLog] = useState([])
   const inflightRef = useRef(new Set()) // track in-flight category saves to prevent duplicates
 
   const fetchVoteLog = useCallback(async () => {
-    const { data } = await supabase
-      .from('vote_log').select('*').order('created_at', { ascending: true })
+    // Admins fetch all rows for analytics; regular users only fetch their own
+    const query = supabase.from('vote_log').select('*').order('created_at', { ascending: true })
+    const { data } = (!isAdmin && userEmail)
+      ? await query.eq('voter_email', userEmail)
+      : await query
     setVoteLog(data || [])
-  }, [])
+  }, [userEmail, isAdmin])
 
   useEffect(() => {
     if (userEmail) {

@@ -21,7 +21,7 @@ function Inner() {
   const { user, authLoading, signInAdmin, signOut, signIn, signUp } = useAuth()
   const { categories, loading: catLoading, addCategory, removeCategory, reorderCategories } = useCategories()
   const { contestants, loading: conLoading, addContestant, removeContestant, resetVotes, updateContestantPhoto, updateContestantName, reorderContestants } = useContestants()
-  const { votes, voteLog, saveVote, saveAllVotes, deleteVote, hasVotedInCategory, votedForInCategory } = useVoting(user?.email)
+  const { votes, voteLog, saveVote, saveAllVotes, deleteVote, hasVotedInCategory, votedForInCategory } = useVoting(user?.email, user?.isAdmin === true)
   const { votingOpen, resultsVisible, statusLoading, scheduledTime, setVotingOpen, setResultsVisible, setScheduledVotingTime, invalidateAllSessions } = useVotingStatus()
   const uniqueVoters = useVoterCount()
 
@@ -79,10 +79,12 @@ function Inner() {
             {votingOpen ? 'Voting Open' : 'Voting Closed'}
           </div>
 
-          <div className="status-pill voter-count">
-            <span className="status-dot" style={{ background: 'var(--accent)' }} />
-            {uniqueVoters} voter{uniqueVoters !== 1 ? 's' : ''}
-          </div>
+          {isAdmin && (
+            <div className="status-pill voter-count">
+              <span className="status-dot" style={{ background: 'var(--accent)' }} />
+              {uniqueVoters} voter{uniqueVoters !== 1 ? 's' : ''}
+            </div>
+          )}
 
           <nav className="nav">
             {!isAdmin && (
