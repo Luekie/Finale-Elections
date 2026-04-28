@@ -5,6 +5,7 @@ import { useCategories } from './hooks/useCategories'
 import { useContestants } from './hooks/useContestants'
 import { useVoting } from './hooks/useVoting'
 import { useVotingStatus } from './hooks/useVotingStatus'
+import { useVoterCount } from './hooks/useVoterCount'
 import AuthGate from './components/AuthGate'
 import AdminPanel from './components/AdminPanel'
 import AdminAnalytics from './components/AdminAnalytics'
@@ -22,13 +23,13 @@ function Inner() {
   const { contestants, loading: conLoading, addContestant, removeContestant, resetVotes, updateContestantPhoto, updateContestantName, reorderContestants } = useContestants()
   const { votes, voteLog, saveVote, saveAllVotes, deleteVote, hasVotedInCategory, votedForInCategory } = useVoting(user?.email)
   const { votingOpen, resultsVisible, statusLoading, scheduledTime, setVotingOpen, setResultsVisible, setScheduledVotingTime } = useVotingStatus()
+  const uniqueVoters = useVoterCount()
 
   const isAdmin = user?.isAdmin === true
   const isSuperAdmin = user?.role === 'super'
   const isElectionController = user?.email?.toLowerCase() === 'lusekero@elections.com'
   const loading = catLoading || conLoading
   const totalVotes = contestants.reduce((a, c) => a + (c.votes || 0), 0)
-  const uniqueVoters = new Set(voteLog.map(v => v.voter_email)).size
 
   // Admins land on admin tab; normal users always land on vote tab
   const effectiveView = isAdmin && view !== 'results' ? 'admin' : view
