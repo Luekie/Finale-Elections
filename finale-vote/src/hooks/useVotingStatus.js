@@ -1,15 +1,6 @@
 import { useState, useEffect, useCallback } from 'react'
 import { supabase } from '../supabase'
 
-// Returns today's date at the given UTC hour/minute as an ISO string
-function todayAtUTC(utcHour, utcMinute = 0) {
-  const d = new Date()
-  d.setUTCHours(utcHour, utcMinute, 0, 0)
-  return d.toISOString()
-}
-
-const AUTO_CLOSE_TIME = todayAtUTC(16) // 6:00 PM CAT (UTC+2) = 16:00 UTC
-
 export function useVotingStatus() {
   const [votingOpen, setVotingOpen] = useState(false)
   const [resultsVisible, setResultsVisible] = useState(false)
@@ -32,24 +23,6 @@ export function useVotingStatus() {
       .subscribe()
     return () => { supabase.removeChannel(ch) }
   }, [fetchStatus])
-
-  // Auto-close voting at 6 PM
-  useEffect(() => {
-    if (!votingOpen) return
-
-    const checkAutoClose = async () => {
-      if (new Date() >= new Date(AUTO_CLOSE_TIME)) {
-        console.log('Auto-close: 6 PM reached, closing voting.')
-        await setVotingOpenFn(false)
-      }
-    }
-
-    // Check immediately in case we're already past 6 PM
-    checkAutoClose()
-
-    const interval = setInterval(checkAutoClose, 30000) // check every 30s
-    return () => clearInterval(interval)
-  }, [votingOpen])
 
   // Check scheduled open time every minute
   useEffect(() => {
