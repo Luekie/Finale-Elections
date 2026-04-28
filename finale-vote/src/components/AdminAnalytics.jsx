@@ -383,7 +383,7 @@ export default function AdminAnalytics({ categories, contestants, totalVotes, vo
               <input
                 className="vl-search"
                 type="text"
-                placeholder="Filter by email..."
+                placeholder="Filter by email or name..."
                 value={filterEmail}
                 onChange={e => setFilterEmail(e.target.value)}
               />
@@ -397,9 +397,11 @@ export default function AdminAnalytics({ categories, contestants, totalVotes, vo
           <div className="vl-list">
             {voteLog
               .filter(v => {
+                const contestant = contestants.find(c => c.id === v.contestant_id)
                 const emailMatch = !filterEmail || v.voter_email?.toLowerCase().includes(filterEmail.toLowerCase())
+                const nameMatch = !filterEmail || contestant?.name?.toLowerCase().includes(filterEmail.toLowerCase())
                 const catMatch = filterCat === 'all' || v.category_id === filterCat
-                return emailMatch && catMatch
+                return (emailMatch || nameMatch) && catMatch
               })
               .slice().reverse() // newest first
               .map(v => {

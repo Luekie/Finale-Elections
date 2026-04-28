@@ -187,16 +187,30 @@ export function useAuth() {
       return { success: false, error: 'possible fraud detected' }
     }
 
-    const { error } = await supabase.auth.signUp({ email: trimmed, password, options: { emailRedirectTo: undefined } })
-    if (error) return { success: false, error: error.message || 'Sign up failed.' }
+    // Check failed signup attempts in the last 2 hours
+    const cutoff = new Date(Date.now() - 16 * 60 * 60 * 1000).toISOString()
+    const { count: recentFails } = await supabase
+      .from('signup_attempts')
+      .select('*', { count: 'exact', head: true })
+      .eq('fingerprint', fingerprint)
+      .gte('created_at', cutoff)
 
-    // Record the fingerprint — if this fails, roll back by deleting the auth account
+    if (recentFails >= 3) {
+      return { success: false, error: 'Too many sign-up attempts from this device. Try again in 16 hours.' }
+    }
+
+    const { error } = await supabase.auth.signUp({ email: trimmed, password, options: { emailRedirectTo: undefined } })
+    if (error) {
+      await supabase.from('signup_attempts').insert({ fingerprint, email: trimmed })
+      return { success: false, error: error.message || 'Sign up failed.' }
+    }
+
+    // Record the fingerprint — if this fails, roll back by signing out
     const { error: regError } = await supabase
       .from('device_registrations')
       .insert({ fingerprint, email: trimmed })
 
     if (regError) {
-      // Can't record the device — sign them out to prevent an untracked account
       await supabase.auth.signOut()
       return { success: false, error: 'Registration could not be completed. Please try again.' }
     }
