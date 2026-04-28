@@ -1,6 +1,15 @@
 import { useState, useEffect, useCallback } from 'react'
 import { supabase } from '../supabase'
 
+// Returns today's date at the given UTC hour/minute as an ISO string
+function todayAtUTC(utcHour, utcMinute = 0) {
+  const d = new Date()
+  d.setUTCHours(utcHour, utcMinute, 0, 0)
+  return d.toISOString()
+}
+
+const AUTO_CLOSE_TIME = todayAtUTC(16) // 6:00 PM CAT (UTC+2) = 16:00 UTC
+
 export function useVotingStatus() {
   const [votingOpen, setVotingOpen] = useState(false)
   const [resultsVisible, setResultsVisible] = useState(false)
@@ -24,7 +33,25 @@ export function useVotingStatus() {
     return () => { supabase.removeChannel(ch) }
   }, [fetchStatus])
 
-  // Check scheduled voting time every minute
+  // Auto-close voting at 6 PM
+  useEffect(() => {
+    if (!votingOpen) return
+
+    const checkAutoClose = async () => {
+      if (new Date() >= new Date(AUTO_CLOSE_TIME)) {
+        console.log('Auto-close: 6 PM reached, closing voting.')
+        await setVotingOpenFn(false)
+      }
+    }
+
+    // Check immediately in case we're already past 6 PM
+    checkAutoClose()
+
+    const interval = setInterval(checkAutoClose, 30000) // check every 30s
+    return () => clearInterval(interval)
+  }, [votingOpen])
+
+  // Check scheduled open time every minute
   useEffect(() => {
     if (!scheduledTime || votingOpen) return
 
@@ -32,20 +59,15 @@ export function useVotingStatus() {
       const now = new Date()
       const scheduled = new Date(scheduledTime)
       
-      // If current time is past scheduled time, open voting
       if (now >= scheduled) {
         console.log('Scheduled voting time reached, opening voting...')
         await setVotingOpenFn(true)
-        // Clear the scheduled time after opening
         await supabase.from('settings')
           .upsert({ key: 'scheduled_voting_time', value: '' }, { onConflict: 'key' })
       }
     }
 
-    // Check immediately
     checkSchedule()
-
-    // Then check every minute
     const interval = setInterval(checkSchedule, 60000)
     return () => clearInterval(interval)
   }, [scheduledTime, votingOpen])
