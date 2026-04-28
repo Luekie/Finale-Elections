@@ -6,7 +6,7 @@ export default function ReviewScreen({
   pending, votes,
   votedForInCategory,
   onBack, onSubmit,
-  submitting
+  submitting, submitError
 }) {
   const allSelections = { ...votes, ...pending }
 
@@ -55,13 +55,17 @@ export default function ReviewScreen({
         ))}
       </div>
 
-      <button className="btn-submit-all" onClick={onSubmit} disabled={submitting}>
+      <button className="btn-submit-all" onClick={onSubmit} disabled={submitting || toSubmit.length === 0}>
         {submitting
           ? <span className="btn-spinner" />
           : toSubmit.length > 0
             ? `Final Submit — ${toSubmit.length} Vote${toSubmit.length !== 1 ? 's' : ''}`
             : 'Confirm & Continue'}
       </button>
+
+      {submitError && (
+        <p className="submit-error">{submitError}</p>
+      )}
     </>
   )
 }

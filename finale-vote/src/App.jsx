@@ -26,11 +26,11 @@ function Inner() {
   const isAdmin = user?.isAdmin === true
   const isSuperAdmin = user?.role === 'super'
   const isElectionController = user?.email?.toLowerCase() === 'lusekero@elections.com'
-  const loading = catLoading || conLoading || statusLoading
+  const loading = catLoading || conLoading
   const totalVotes = contestants.reduce((a, c) => a + (c.votes || 0), 0)
 
-  // Auto-set view to admin for admin users
-  const effectiveView = isAdmin && view === 'vote' ? 'admin' : view
+  // Admins land on admin tab; normal users always land on vote tab
+  const effectiveView = isAdmin && view !== 'results' ? 'admin' : view
 
   // Show auth gate if not logged in
   if (authLoading) {
@@ -134,8 +134,8 @@ function Inner() {
                     <span className="results-locked-icon">🏆</span>
                     <h2 className="results-locked-title">Results Not Available Yet</h2>
                     <p className="results-locked-desc">
-                      The results will be revealed by the Electoral Committee after voting closes.
-                      Check back soon!
+                      Results will be revealed after the winners are announced at the Finale Dinner.
+                      See you there!
                     </p>
                   </div>
                 </div>

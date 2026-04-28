@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useRef } from 'react'
 import BallotScreen from './BallotScreen'
 import ReviewScreen from './ReviewScreen'
 import ConfirmationScreen from './ConfirmationScreen'
@@ -12,6 +12,8 @@ export default function VotingPanel({
   const [activeCat, setActiveCat] = useState(null)
   const [pending, setPending] = useState({})
   const [submitting, setSubmitting] = useState(false)
+  const [submitError, setSubmitError] = useState(null)
+  const lastSubmitRef = useRef(0) // timestamp of last submit attempt — rate limit guard
 
   const savedCount = categories.filter(c => votedForInCategory(c.id)).length
 
@@ -30,6 +32,11 @@ export default function VotingPanel({
   }
 
   const handleFinalSubmit = async () => {
+    // Rate limit: prevent re-submitting within 2 seconds
+    const now = Date.now()
+    if (now - lastSubmitRef.current < 2000) return
+    lastSubmitRef.current = now
+
     const toSave = {}
     categories.forEach(cat => {
       const sel = pending[cat.id]
@@ -37,12 +44,16 @@ export default function VotingPanel({
     })
 
     setSubmitting(true)
+    setSubmitError(null)
     try {
       if (Object.keys(toSave).length > 0) await saveAllVotes(toSave)
       setPending({})
       setStep('confirmation')
-    } catch { /* stay on review */ }
-    finally { setSubmitting(false) }
+    } catch (err) {
+      setSubmitError(err?.message || 'Something went wrong. Please try again.')
+    } finally {
+      setSubmitting(false)
+    }
   }
 
   // Tab bar — only show when not in a category drill-down
@@ -83,9 +94,10 @@ export default function VotingPanel({
           pending={pending}
           votes={votes}
           votedForInCategory={votedForInCategory}
-          onBack={() => setStep('ballot')}
+          onBack={() => { setSubmitError(null); setStep('ballot') }}
           onSubmit={handleFinalSubmit}
           submitting={submitting}
+          submitError={submitError}
         />
       )}
 

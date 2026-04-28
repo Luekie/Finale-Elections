@@ -135,7 +135,7 @@ export default function AuthGate({ onSignIn, onSignUp, onSignInAdmin }) {
         </div>
 
         <p className="auth-note">
-          Only <code>@unima.ac.mw</code> emails with year suffix 19–22 are eligible to vote.
+          Only <code>@unima.ac.mw</code> emails with year suffix 20-22 are elligible to vote.
         </p>
       </div>
     </div>

@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react'
 import { supabase } from '../supabase'
 
 const DOMAIN = 'unima.ac.mw'
-const ALLOWED_YEARS = ['18', '19', '20', '21', '22']
+const ALLOWED_YEARS = ['20', '21', '22']
 const ALLOWED_PREFIXES = new Set([
   'bsc', 'bsc-com', 'bah', 'ba-eco', 'bsc-inf', 'bsc-com-ne',
   'law', 'ess', 'me-ess', 'bed-com', 'ba-soc', 'ba-seh', 'ba-mfd',

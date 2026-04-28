@@ -1,9 +1,10 @@
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useRef } from 'react'
 import { supabase } from '../supabase'
 
 export function useContestants() {
   const [contestants, setContestants] = useState([])
   const [loading, setLoading] = useState(true)
+  const debounceTimer = useRef(null)
 
   const fetchContestants = useCallback(async () => {
     const { data, error } = await supabase
@@ -15,21 +16,30 @@ export function useContestants() {
     setLoading(false)
   }, [])
 
+  // Debounced version — collapses rapid-fire realtime events into a single fetch
+  const debouncedFetch = useCallback(() => {
+    if (debounceTimer.current) clearTimeout(debounceTimer.current)
+    debounceTimer.current = setTimeout(fetchContestants, 400)
+  }, [fetchContestants])
+
   useEffect(() => {
     fetchContestants()
 
     const ch = supabase
       .channel('contestants-realtime')
-      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'contestants' }, fetchContestants)
-      .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'contestants' }, fetchContestants)
-      .on('postgres_changes', { event: 'DELETE', schema: 'public', table: 'contestants' }, fetchContestants)
-      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'vote_log' }, fetchContestants)
-      .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'vote_log' }, fetchContestants)
-      .on('postgres_changes', { event: 'DELETE', schema: 'public', table: 'vote_log' }, fetchContestants)
+      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'contestants' }, debouncedFetch)
+      .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'contestants' }, debouncedFetch)
+      .on('postgres_changes', { event: 'DELETE', schema: 'public', table: 'contestants' }, debouncedFetch)
+      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'vote_log' }, debouncedFetch)
+      .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'vote_log' }, debouncedFetch)
+      .on('postgres_changes', { event: 'DELETE', schema: 'public', table: 'vote_log' }, debouncedFetch)
       .subscribe()
 
-    return () => { supabase.removeChannel(ch) }
-  }, [fetchContestants])
+    return () => {
+      if (debounceTimer.current) clearTimeout(debounceTimer.current)
+      supabase.removeChannel(ch)
+    }
+  }, [fetchContestants, debouncedFetch])
 
   const addContestant = async (categoryId, name, imageFile) => {
     const { data, error } = await supabase
