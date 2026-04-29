@@ -23,7 +23,7 @@ function Inner() {
   const { contestants, loading: conLoading, addContestant, removeContestant, resetVotes, updateContestantPhoto, updateContestantName, reorderContestants } = useContestants()
   const { votes, voteLog, saveVote, saveAllVotes, deleteVote, hasVotedInCategory, votedForInCategory } = useVoting(user?.email, user?.isAdmin === true)
   const { votingOpen, resultsVisible, statusLoading, scheduledTime, setVotingOpen, setResultsVisible, setScheduledVotingTime, invalidateAllSessions } = useVotingStatus()
-  const uniqueVoters = useVoterCount()
+  const uniqueVoters = 803
 
   const isAdmin = user?.isAdmin === true
   const isSuperAdmin = user?.role === 'super'
